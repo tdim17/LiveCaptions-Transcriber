@@ -12,6 +12,7 @@ namespace LiveCaptionsTranscriber.models
     public class Setting : INotifyPropertyChanged
     {
         public static readonly string FILENAME = "setting.json";
+        public static readonly string FILE_PATH = Path.Combine(AppContext.BaseDirectory, FILENAME);
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -105,16 +106,15 @@ namespace LiveCaptionsTranscriber.models
 
         public static Setting Load()
         {
-            string jsonPath = Path.Combine(Directory.GetCurrentDirectory(), FILENAME);
             try
             {
-                return Load(jsonPath);
+                return Load(FILE_PATH);
             }
             catch (JsonException)
             {
-                string backupPath = jsonPath + ".bak";
-                File.Move(jsonPath, backupPath);
-                return Load(jsonPath);
+                string backupPath = FILE_PATH + ".bak";
+                File.Move(FILE_PATH, backupPath);
+                return Load(FILE_PATH);
             }
         }
 
@@ -142,7 +142,7 @@ namespace LiveCaptionsTranscriber.models
 
         public void Save()
         {
-            Save(FILENAME);
+            Save(FILE_PATH);
         }
 
         public void Save(string jsonPath)
@@ -165,9 +165,8 @@ namespace LiveCaptionsTranscriber.models
 
         public static bool IsConfigExist()
         {
-            string jsonPath = Path.Combine(Directory.GetCurrentDirectory(), FILENAME);
-            Console.WriteLine($"Config file path: {jsonPath}");
-            return File.Exists(jsonPath);
+            Console.WriteLine($"Config file path: {FILE_PATH}");
+            return File.Exists(FILE_PATH);
         }
     }
 }
