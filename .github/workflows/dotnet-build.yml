@@ -1,3 +1,4 @@
+# Registered in the fork to enable reproducible test builds.
 name: CI/CD Pipeline
 
 on:
