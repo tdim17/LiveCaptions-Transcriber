@@ -363,3 +363,9 @@ MigrationBackup/
 FodyWeavers.xsd
 
 .idea/
+
+# Local runtime data and opt-in diagnostic captures
+enable-raw-caption-log.flag
+diagnostics/
+setting.json
+transcription_history.db

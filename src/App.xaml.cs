@@ -18,6 +18,8 @@ namespace LiveCaptionsTranscriber
 
         private static void OnProcessExit(object sender, EventArgs e)
         {
+            RawCaptionRecorder.Shutdown();
+
             if (Transcriber.Window != null)
             {
                 LiveCaptionsHandler.RestoreLiveCaptions(Transcriber.Window);

@@ -64,6 +64,7 @@ namespace LiveCaptionsTranscriber
                     var name = info.Name;
                     // Get the text recognized by LiveCaptions (10-20ms)
                     fullText = LiveCaptionsHandler.GetCaptions(Window);
+                    RawCaptionRecorder.Record(fullText);
                 }
                 catch (ElementNotAvailableException)
                 {

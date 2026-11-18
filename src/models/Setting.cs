@@ -12,7 +12,7 @@ namespace LiveCaptionsTranscriber.models
     public class Setting : INotifyPropertyChanged
     {
         public static readonly string FILENAME = "setting.json";
-        public static readonly string FILE_PATH = Path.Combine(AppContext.BaseDirectory, FILENAME);
+        public static readonly string FILE_PATH = AppPaths.SettingsFile;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 

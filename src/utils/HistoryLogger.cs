@@ -11,8 +11,7 @@ namespace LiveCaptionsTranscriber.utils
 {
     public static class SQLiteHistoryLogger
     {
-        public static readonly string DATABASE_PATH = Path.Combine(
-            AppContext.BaseDirectory, "transcription_history.db");
+        public static readonly string DATABASE_PATH = AppPaths.DatabaseFile;
         public static readonly string CONNECTION_STRING = new SqliteConnectionStringBuilder
         {
             DataSource = DATABASE_PATH
