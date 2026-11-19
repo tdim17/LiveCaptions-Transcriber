@@ -22,24 +22,34 @@
             </TextBlock>
             <Separator Margin="0,10,0,10" />
             <TextBlock Margin="0,0,0,3">
-                <Run FontWeight="SemiBold" Text="Based on:" />
+                <Run FontWeight="SemiBold" Text="Original project:" />
                 <Hyperlink NavigateUri="https://github.com/SakiRinn/LiveCaptions-Translator" RequestNavigate="Hyperlink_RequestNavigate">
                     <Run Text="LiveCaptions-Translator by @SakiRinn" />
                 </Hyperlink>
             </TextBlock>
             <TextBlock Margin="0,0,0,3">
-                <Run FontWeight="SemiBold" Text="Repository:" />
+                <Run FontWeight="SemiBold" Text="Based on:" />
                 <Hyperlink NavigateUri="https://github.com/darshankparmar/LiveCaptions-Transcriber" RequestNavigate="Hyperlink_RequestNavigate">
-                    <Run Text="https://github.com/darshankparmar/LiveCaptions-Transcriber" />
+                    <Run Text="LiveCaptions-Transcriber by @darshankparmar" />
                 </Hyperlink>
             </TextBlock>
             <TextBlock Margin="0,0,0,3">
-                <Run FontWeight="SemiBold" Text="Modified for:" />
-                <Run Text="Transcription-only functionality with enhanced UI" />
+                <Run FontWeight="SemiBold" Text="Modified by:" />
+                <Run Text="tdim17" />
+            </TextBlock>
+            <TextBlock Margin="0,0,0,3">
+                <Run FontWeight="SemiBold" Text="Purpose:" />
+                <Run Text="Reliable capture and storage of Windows Live Captions" />
+            </TextBlock>
+            <TextBlock Margin="0,0,0,3">
+                <Run FontWeight="SemiBold" Text="Source code:" />
+                <Hyperlink NavigateUri="https://github.com/tdim17/LiveCaptions-Transcriber" RequestNavigate="Hyperlink_RequestNavigate">
+                    <Run Text="https://github.com/tdim17/LiveCaptions-Transcriber" />
+                </Hyperlink>
             </TextBlock>
             <TextBlock>
                 <Run FontWeight="SemiBold" Text="Version:" />
-                <Run x:Name="Version" Text="1.0.0 (Transcription Edition)" />
+                <Run x:Name="Version" Text="1.1.0" />
             </TextBlock>
         </StackPanel>
     </Grid>

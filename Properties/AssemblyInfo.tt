@@ -10,11 +10,10 @@
 using System.Reflection;
 
 <#
-    var date = DateTime.Now;
     int major = 1;
-    int minor = 6;
-    int build = int.Parse(date.ToString("yyMM")) / 2;
-    int revision = int.Parse(date.ToString("ddHH"));
+    int minor = 1;
+    int build = 0;
+    int revision = 0;
 #>
 
 [assembly: AssemblyTitle("LiveCaptions Transcriber")]

@@ -15,7 +15,8 @@ namespace LiveCaptionsTranscriber
             InitializeComponent();
             ApplicationThemeManager.ApplySystemTheme();
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
-            Version.Text = version;
+            if (System.Version.TryParse(version, out var parsedVersion))
+                Version.Text = $"{parsedVersion.Major}.{parsedVersion.Minor}.{parsedVersion.Build}";
 
             Loaded += (s, e) =>
             {
