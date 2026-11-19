@@ -21,6 +21,7 @@ A focused transcription tool that enhances Windows LiveCaptions with a modern in
 
 **Key improvements over standard LiveCaptions:**
 - **Continuous text display** - See all transcribed text in one scrollable view
+- **Start, Pause, Resume & Stop** - Control exactly when text is written to the transcript
 - **Copy & Clear functionality** - Easy text management with one-click actions  
 - **Overlay mode** - Transparent window for gaming and streaming
 - **History logging** - Keep records of all transcriptions
@@ -54,7 +55,7 @@ A focused transcription tool that enhances Windows LiveCaptions with a modern in
 
 - **🔄 Seamless LiveCaptions Integration**
 
-  Automatically launches and manages Windows LiveCaptions in the background. The original LiveCaptions window is hidden while this tool provides an enhanced interface.
+  Launches and manages Windows LiveCaptions after **Start Recording** is pressed. The original LiveCaptions window is hidden while this tool provides an enhanced interface.
 
   > ⚠️ **IMPORTANT:** Enable ***Include microphone audio*** in Windows LiveCaptions settings for speech transcription!
 
@@ -90,6 +91,10 @@ A focused transcription tool that enhances Windows LiveCaptions with a modern in
 
 - **⚙️ Simple Controls**
 
+  - Start Recording creates a new timestamped TXT file
+  - Pause safely saves the current segment
+  - Resume continues the same TXT and inserts a searchable `CONTINUE` marker
+  - Stop finalizes the current file
   - Always-on-top window option
   - Overlay mode toggle
   - Clean, distraction-free interface

@@ -161,8 +161,6 @@ namespace LiveCaptionsTranscriber
             if (!Transcriber.FirstUseFlag)
                 return;
 
-            LiveCaptionsHandler.RestoreLiveCaptions(Transcriber.Window);
-
             Dispatcher.InvokeAsync(() =>
             {
                 var welcomeWindow = new WelcomeWindow

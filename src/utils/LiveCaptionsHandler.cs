@@ -12,6 +12,7 @@ namespace LiveCaptionsTranscriber.utils
         public static AutomationElement LaunchLiveCaptions()
         {
             // Init
+            captionsTextBlock = null;
             KillAllProcessesByPName(PROCESS_NAME);
             var process = Process.Start(PROCESS_NAME);
 
@@ -31,6 +32,7 @@ namespace LiveCaptionsTranscriber.utils
 
         public static void KillLiveCaptions(AutomationElement window)
         {
+            captionsTextBlock = null;
             // Search for process
             nint hWnd = new nint((long)window.Current.NativeWindowHandle);
             WindowsAPI.GetWindowThreadProcessId(hWnd, out int processId);

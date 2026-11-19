@@ -181,6 +181,28 @@ static void DoesNotSplitCommonAbbreviations()
         nameof(DoesNotSplitCommonAbbreviations) + " paragraph count");
 }
 
+static void ResumeMarkerIsAnIndependentFormattingBoundary()
+{
+    const string source =
+        "Before pause first sentence. Before pause second sentence. " +
+        "After resume first sentence. After resume second sentence.";
+    int boundaryPosition = source.IndexOf("After resume", StringComparison.Ordinal);
+    const string marker = "========== CONTINUE 2026-11-19 14:32:08 ==========";
+
+    string formatted = TranscriptDocumentFormatter.Format(
+        source,
+        new[] { new TranscriptBoundary(boundaryPosition, marker) });
+    string separator = Environment.NewLine + Environment.NewLine;
+
+    AssertTrue(
+        formatted.Contains("second sentence." + separator + marker + separator + "After resume"),
+        nameof(ResumeMarkerIsAnIndependentFormattingBoundary));
+    AssertEqual(
+        source,
+        formatted.Replace(separator + marker + separator, " "),
+        nameof(ResumeMarkerIsAnIndependentFormattingBoundary) + " text preservation");
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
@@ -192,5 +214,6 @@ LeadingPunctuationDoesNotMoveWindowStart();
 WeakAnchorStartsAndThenUpdatesNewSegment();
 FormatsReadableParagraphsWithoutChangingText();
 DoesNotSplitCommonAbbreviations();
+ResumeMarkerIsAnIndependentFormattingBoundary();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");

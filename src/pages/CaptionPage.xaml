@@ -57,21 +57,67 @@
             Grid.Row="1"
             Margin="0,5,0,0"
             Padding="8">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <ui:Button
-                    x:Name="CopyButton"
-                    Content="Copy All"
-                    Margin="0,0,10,0"
-                    Padding="15,8"
-                    Click="CopyButton_Click"
-                    Icon="{ui:SymbolIcon Copy16}" />
-                <ui:Button
-                    x:Name="ClearButton"
-                    Content="Clear"
-                    Padding="15,8"
-                    Click="ClearButton_Click"
-                    Icon="{ui:SymbolIcon Delete16}"
-                    Appearance="Secondary" />
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ui:Button
+                        x:Name="StartButton"
+                        Content="Start Recording"
+                        Margin="0,0,8,0"
+                        Padding="15,8"
+                        Click="StartButton_Click" />
+                    <ui:Button
+                        x:Name="PauseButton"
+                        Content="Pause"
+                        Margin="0,0,8,0"
+                        Padding="15,8"
+                        Click="PauseButton_Click"
+                        Appearance="Secondary" />
+                    <ui:Button
+                        x:Name="ResumeButton"
+                        Content="Resume"
+                        Margin="0,0,8,0"
+                        Padding="15,8"
+                        Click="ResumeButton_Click"
+                        Appearance="Secondary" />
+                    <ui:Button
+                        x:Name="StopButton"
+                        Content="Stop"
+                        Padding="15,8"
+                        Click="StopButton_Click"
+                        Appearance="Secondary" />
+                </StackPanel>
+                <TextBlock
+                    x:Name="RecordingStatusText"
+                    Margin="0,8,0,0"
+                    HorizontalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Ready — press Start Recording" />
+                <TextBlock
+                    x:Name="TranscriptFileText"
+                    Margin="0,3,0,0"
+                    HorizontalAlignment="Center"
+                    Foreground="Gray"
+                    TextTrimming="CharacterEllipsis"
+                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                <StackPanel
+                    Margin="0,8,0,0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center">
+                    <ui:Button
+                        x:Name="CopyButton"
+                        Content="Copy All"
+                        Margin="0,0,10,0"
+                        Padding="15,8"
+                        Click="CopyButton_Click"
+                        Icon="{ui:SymbolIcon Copy16}" />
+                    <ui:Button
+                        x:Name="ClearButton"
+                        Content="Clear"
+                        Padding="15,8"
+                        Click="ClearButton_Click"
+                        Icon="{ui:SymbolIcon Delete16}"
+                        Appearance="Secondary" />
+                </StackPanel>
             </StackPanel>
         </ui:Card>
 
