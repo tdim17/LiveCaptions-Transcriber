@@ -239,6 +239,31 @@ static void ResumeWorksWithShortExcludedBaseline()
         nameof(ResumeWorksWithShortExcludedBaseline));
 }
 
+static void ResumePreservesVeryShortWantedPhrases()
+{
+    var firstAssembler = new TranscriptAssembler();
+    firstAssembler.Apply("Before first pause.");
+    firstAssembler.StartNewSegment();
+    firstAssembler.PrimeIgnoredWindow("Excluded interval.");
+    var firstUpdate = firstAssembler.Apply("Excluded interval. I see.");
+
+    AssertEqual(
+        "Before first pause. I see.",
+        firstUpdate.FullText,
+        nameof(ResumePreservesVeryShortWantedPhrases) + " I see");
+
+    var secondAssembler = new TranscriptAssembler();
+    secondAssembler.Apply("Before second pause.");
+    secondAssembler.StartNewSegment();
+    secondAssembler.PrimeIgnoredWindow("Another excluded interval.");
+    var secondUpdate = secondAssembler.Apply("Another excluded interval. OK.");
+
+    AssertEqual(
+        "Before second pause. OK.",
+        secondUpdate.FullText,
+        nameof(ResumePreservesVeryShortWantedPhrases) + " OK");
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
@@ -253,5 +278,6 @@ DoesNotSplitCommonAbbreviations();
 ResumeMarkerIsAnIndependentFormattingBoundary();
 ResumeDiscardsExcludedIntervalAndCapturesOnlyNewText();
 ResumeWorksWithShortExcludedBaseline();
+ResumePreservesVeryShortWantedPhrases();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");

@@ -172,11 +172,11 @@ namespace LiveCaptionsTranscriber.utils
         {
             if (currentWindow.StartsWith(ignoredPreviousWindow, StringComparison.Ordinal))
             {
-                int currentBoundary = Math.Min(ignoredBoundary, currentWindow.Length);
-                string capturedSuffix = currentWindow[currentBoundary..].Trim();
+                int prefixBoundary = Math.Min(ignoredBoundary, currentWindow.Length);
+                string prefixCapturedSuffix = currentWindow[prefixBoundary..].Trim();
                 ignoredPreviousWindow = currentWindow;
-                ignoredBoundary = currentBoundary;
-                return capturedSuffix;
+                ignoredBoundary = prefixBoundary;
+                return prefixCapturedSuffix;
             }
 
             if (ignoredPreviousWindow.StartsWith(currentWindow, StringComparison.Ordinal))
