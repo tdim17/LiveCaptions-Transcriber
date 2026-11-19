@@ -77,6 +77,8 @@ namespace LiveCaptionsTranscriber
                 if (string.IsNullOrEmpty(fullText))
                     continue;
 
+                string transcriptSnapshot = fullText;
+
                 // Preprocess
                 fullText = RegexPatterns.Acronym().Replace(fullText, "$1$2");
                 fullText = RegexPatterns.AcronymWithWords().Replace(fullText, "$1 $2");
@@ -89,7 +91,7 @@ namespace LiveCaptionsTranscriber
                 TranscriptUpdate transcriptUpdate;
                 lock (transcriptLock)
                 {
-                    transcriptUpdate = transcriptAssembler.Apply(fullText);
+                    transcriptUpdate = transcriptAssembler.Apply(transcriptSnapshot);
                     Caption.FullTranscriptionText = transcriptUpdate.FullText;
                     TranscriptFileWriter.Write(transcriptUpdate.FullText);
                 }
