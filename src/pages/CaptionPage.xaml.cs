@@ -3,6 +3,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Media;
 
 using LiveCaptionsTranscriber.utils;
 using LiveCaptionsTranscriber.models;
@@ -153,11 +154,29 @@ namespace LiveCaptionsTranscriber
             {
                 RecordingState.Ready => "Ready — press Start Recording",
                 RecordingState.Starting => "Starting Live Captions...",
-                RecordingState.Recording => "Recording",
-                RecordingState.Paused => "Paused — captured text is saved",
+                RecordingState.Recording => "●  RECORDING",
+                RecordingState.Paused => "Paused — Live Captions active; text is excluded",
                 RecordingState.Stopped => "Stopped — file saved",
                 _ => state.ToString()
             };
+
+            if (state == RecordingState.Recording)
+            {
+                RecordingStatusBanner.Background =
+                    new SolidColorBrush(Color.FromRgb(196, 32, 32));
+                RecordingStatusText.Foreground = Brushes.White;
+            }
+            else if (state == RecordingState.Paused)
+            {
+                RecordingStatusBanner.Background =
+                    new SolidColorBrush(Color.FromRgb(255, 193, 7));
+                RecordingStatusText.Foreground = Brushes.Black;
+            }
+            else
+            {
+                RecordingStatusBanner.Background = Brushes.Transparent;
+                RecordingStatusText.ClearValue(TextBlock.ForegroundProperty);
+            }
 
             string? filePath = Transcriber.CurrentTranscriptFile;
             TranscriptFileText.Text = string.IsNullOrEmpty(filePath)

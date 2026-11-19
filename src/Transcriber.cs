@@ -21,6 +21,7 @@ namespace LiveCaptionsTranscriber
         private static readonly object transcriptLock = new();
         private static readonly object recordingStateLock = new();
         private static int recordingState = (int)RecordingState.Ready;
+        private static string pausedBaselineSnapshot = string.Empty;
         private static int stopping;
         private static int shutdownStarted;
 
@@ -55,7 +56,8 @@ namespace LiveCaptionsTranscriber
         {
             while (Volatile.Read(ref stopping) == 0)
             {
-                if (CurrentRecordingState != RecordingState.Recording)
+                RecordingState currentState = CurrentRecordingState;
+                if (currentState is not (RecordingState.Recording or RecordingState.Paused))
                 {
                     Thread.Sleep(100);
                     continue;
@@ -83,7 +85,15 @@ namespace LiveCaptionsTranscriber
                     Window = null;
                     continue;
                 }
-                if (CurrentRecordingState != RecordingState.Recording)
+                currentState = CurrentRecordingState;
+                if (currentState == RecordingState.Paused)
+                {
+                    lock (transcriptLock)
+                        pausedBaselineSnapshot = fullText;
+                    Thread.Sleep(25);
+                    continue;
+                }
+                if (currentState != RecordingState.Recording)
                     continue;
                 if (string.IsNullOrEmpty(fullText))
                     continue;
@@ -316,6 +326,7 @@ namespace LiveCaptionsTranscriber
                 {
                     transcriptAssembler.Reset();
                     transcriptBoundaries.Clear();
+                    pausedBaselineSnapshot = string.Empty;
                     while (pendingTextQueue.TryDequeue(out _))
                     {
                     }
@@ -343,12 +354,10 @@ namespace LiveCaptionsTranscriber
                     RecordingState.Paused))
                 throw new InvalidOperationException("Recording is not active.");
 
-            CaptureFinalSnapshot();
+            string finalSnapshot = CaptureFinalSnapshot();
             FinalizeCurrentSegment();
-            AutomationElement? currentWindow = Window;
-            Window = null;
-            if (currentWindow != null)
-                TryKillLiveCaptions(currentWindow);
+            lock (transcriptLock)
+                pausedBaselineSnapshot = finalSnapshot;
         }
 
         public static void ResumeRecording()
@@ -358,17 +367,40 @@ namespace LiveCaptionsTranscriber
                     RecordingState.Starting))
                 throw new InvalidOperationException("Recording is not paused.");
 
-            AutomationElement? preparedWindow = null;
+            AutomationElement? preparedWindow = Window;
+            bool launchedReplacement = false;
             try
             {
-                preparedWindow = PrepareLiveCaptions();
+                if (preparedWindow == null)
+                {
+                    preparedWindow = PrepareLiveCaptions();
+                    launchedReplacement = true;
+                }
+
+                string baselineSnapshot;
+                try
+                {
+                    baselineSnapshot = LiveCaptionsHandler.GetCaptions(preparedWindow);
+                }
+                catch (ElementNotAvailableException)
+                {
+                    preparedWindow = PrepareLiveCaptions();
+                    launchedReplacement = true;
+                    baselineSnapshot = string.Empty;
+                }
+
                 lock (transcriptLock)
                 {
+                    if (string.IsNullOrEmpty(baselineSnapshot))
+                        baselineSnapshot = pausedBaselineSnapshot;
+
                     string marker =
                         $"========== CONTINUE {DateTime.Now:yyyy-MM-dd HH:mm:ss} ==========";
                     transcriptBoundaries.Add(new TranscriptBoundary(
                         transcriptAssembler.FullText.Length,
                         marker));
+                    transcriptAssembler.PrimeIgnoredWindow(baselineSnapshot);
+                    pausedBaselineSnapshot = string.Empty;
 
                     string formattedText = FormatTranscriptDocument();
                     if (Caption != null)
@@ -380,9 +412,10 @@ namespace LiveCaptionsTranscriber
             }
             catch
             {
-                if (preparedWindow != null)
+                if (launchedReplacement && preparedWindow != null)
                     TryKillLiveCaptions(preparedWindow);
-                Window = null;
+                if (launchedReplacement)
+                    Window = null;
                 ChangeState(RecordingState.Paused);
                 throw;
             }
@@ -445,24 +478,26 @@ namespace LiveCaptionsTranscriber
             }
         }
 
-        private static void CaptureFinalSnapshot()
+        private static string CaptureFinalSnapshot()
         {
             AutomationElement? currentWindow = Window;
             if (currentWindow == null)
-                return;
+                return string.Empty;
 
             try
             {
                 string finalSnapshot = LiveCaptionsHandler.GetCaptions(currentWindow);
                 if (string.IsNullOrEmpty(finalSnapshot))
-                    return;
+                    return string.Empty;
 
                 RawCaptionRecorder.Record(finalSnapshot);
                 lock (transcriptLock)
                     transcriptAssembler.Apply(finalSnapshot);
+                return finalSnapshot;
             }
             catch (ElementNotAvailableException)
             {
+                return string.Empty;
             }
         }
 

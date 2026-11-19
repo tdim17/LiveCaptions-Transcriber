@@ -12,6 +12,9 @@ namespace LiveCaptionsTranscriber.utils
         private int windowStart;
         private int committedLength;
         private bool appendNextWindow;
+        private string ignoredPreviousWindow = string.Empty;
+        private int ignoredBoundary;
+        private bool ignoredWindowActive;
 
         public TranscriptAssembler()
         {
@@ -26,6 +29,13 @@ namespace LiveCaptionsTranscriber.utils
             string currentWindow = Normalize(snapshot);
             if (string.IsNullOrEmpty(currentWindow))
                 return new TranscriptUpdate(document, string.Empty, false);
+
+            if (ignoredWindowActive)
+            {
+                currentWindow = ExtractAfterIgnoredWindow(currentWindow);
+                if (string.IsNullOrEmpty(currentWindow))
+                    return new TranscriptUpdate(document, string.Empty, false);
+            }
 
             bool safetyViolation = false;
 
@@ -137,7 +147,15 @@ namespace LiveCaptionsTranscriber.utils
             previousWindow = string.Empty;
             windowStart = document.Length;
             appendNextWindow = !string.IsNullOrEmpty(document);
+            ClearIgnoredWindow();
             return pending;
+        }
+
+        public void PrimeIgnoredWindow(string snapshot)
+        {
+            ignoredPreviousWindow = Normalize(snapshot);
+            ignoredBoundary = ignoredPreviousWindow.Length;
+            ignoredWindowActive = ignoredPreviousWindow.Length > 0;
         }
 
         public void Reset()
@@ -147,6 +165,63 @@ namespace LiveCaptionsTranscriber.utils
             windowStart = 0;
             committedLength = 0;
             appendNextWindow = false;
+            ClearIgnoredWindow();
+        }
+
+        private string ExtractAfterIgnoredWindow(string currentWindow)
+        {
+            if (currentWindow.StartsWith(ignoredPreviousWindow, StringComparison.Ordinal))
+            {
+                int currentBoundary = Math.Min(ignoredBoundary, currentWindow.Length);
+                string capturedSuffix = currentWindow[currentBoundary..].Trim();
+                ignoredPreviousWindow = currentWindow;
+                ignoredBoundary = currentBoundary;
+                return capturedSuffix;
+            }
+
+            if (ignoredPreviousWindow.StartsWith(currentWindow, StringComparison.Ordinal))
+            {
+                ignoredPreviousWindow = currentWindow;
+                ignoredBoundary = Math.Min(ignoredBoundary, currentWindow.Length);
+                return string.Empty;
+            }
+
+            CharacterAnchor anchor = FindLongestCharacterAnchor(
+                ignoredPreviousWindow,
+                currentWindow);
+
+            if (anchor.CharacterLength < MinimumAnchorCharacters)
+            {
+                if (HaveSameLeadingWord(ignoredPreviousWindow, currentWindow))
+                {
+                    ignoredPreviousWindow = currentWindow;
+                    ignoredBoundary = currentWindow.Length;
+                    return string.Empty;
+                }
+
+                ClearIgnoredWindow();
+                return currentWindow;
+            }
+
+            int currentBoundary = Math.Clamp(
+                ignoredBoundary - anchor.PreviousCharacterIndex + anchor.CurrentCharacterIndex,
+                0,
+                currentWindow.Length);
+            string capturedSuffix = currentWindow[currentBoundary..].Trim();
+
+            ignoredPreviousWindow = currentWindow;
+            ignoredBoundary = currentBoundary;
+            if (currentBoundary == 0)
+                ClearIgnoredWindow();
+
+            return capturedSuffix;
+        }
+
+        private void ClearIgnoredWindow()
+        {
+            ignoredPreviousWindow = string.Empty;
+            ignoredBoundary = 0;
+            ignoredWindowActive = false;
         }
 
         private static string Normalize(string text)

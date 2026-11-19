@@ -203,6 +203,42 @@ static void ResumeMarkerIsAnIndependentFormattingBoundary()
         nameof(ResumeMarkerIsAnIndependentFormattingBoundary) + " text preservation");
 }
 
+static void ResumeDiscardsExcludedIntervalAndCapturesOnlyNewText()
+{
+    var assembler = new TranscriptAssembler();
+    assembler.Apply("Recorded before pause.");
+    assembler.StartNewSegment();
+    assembler.PrimeIgnoredWindow("Intentionally excluded first part. Excluded second part.");
+
+    assembler.Apply(
+        "Intentionally excluded first part. Excluded second part. New content begins.");
+    var update = assembler.Apply(
+        "Excluded second part. New content begins. More useful content.");
+
+    AssertEqual(
+        "Recorded before pause. New content begins. More useful content.",
+        update.FullText,
+        nameof(ResumeDiscardsExcludedIntervalAndCapturesOnlyNewText));
+    AssertTrue(
+        !update.FullText.Contains("excluded", StringComparison.OrdinalIgnoreCase),
+        nameof(ResumeDiscardsExcludedIntervalAndCapturesOnlyNewText) + " excluded text");
+}
+
+static void ResumeWorksWithShortExcludedBaseline()
+{
+    var assembler = new TranscriptAssembler();
+    assembler.Apply("Before pause.");
+    assembler.StartNewSegment();
+    assembler.PrimeIgnoredWindow("OK.");
+
+    var update = assembler.Apply("OK. New content after resume.");
+
+    AssertEqual(
+        "Before pause. New content after resume.",
+        update.FullText,
+        nameof(ResumeWorksWithShortExcludedBaseline));
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
@@ -215,5 +251,7 @@ WeakAnchorStartsAndThenUpdatesNewSegment();
 FormatsReadableParagraphsWithoutChangingText();
 DoesNotSplitCommonAbbreviations();
 ResumeMarkerIsAnIndependentFormattingBoundary();
+ResumeDiscardsExcludedIntervalAndCapturesOnlyNewText();
+ResumeWorksWithShortExcludedBaseline();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");

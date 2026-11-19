@@ -61,12 +61,15 @@
             <ui:NavigationView
                 x:Name="RootNavigation"
                 Grid.Row="1"
-                Height="Auto"
                 HeaderVisibility="Collapsed"
                 IsBackButtonVisible="Collapsed"
                 IsPaneOpen="False"
                 IsPaneToggleVisible="False"
-                PaneDisplayMode="LeftMinimal">
+                PaneDisplayMode="LeftMinimal"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                VerticalAlignment="Stretch"
+                VerticalContentAlignment="Stretch">
                 <ui:NavigationView.MenuItems>
                     <ui:NavigationViewItem
                         Margin="0,6,0,3"

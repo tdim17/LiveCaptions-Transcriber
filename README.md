@@ -92,8 +92,8 @@ A focused transcription tool that enhances Windows LiveCaptions with a modern in
 - **⚙️ Simple Controls**
 
   - Start Recording creates a new timestamped TXT file
-  - Pause safely saves the current segment
-  - Resume continues the same TXT and inserts a searchable `CONTINUE` marker
+  - Pause saves the current segment while Live Captions keeps running; recognized text during the excluded interval is not written to TXT
+  - Resume continues the same TXT immediately and inserts a searchable `CONTINUE` marker
   - Stop finalizes the current file
   - Always-on-top window option
   - Overlay mode toggle

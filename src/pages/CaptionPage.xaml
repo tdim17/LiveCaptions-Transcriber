@@ -8,6 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="CaptionPage"
     JournalEntry.KeepAlive="True"
+    VerticalAlignment="Stretch"
     mc:Ignorable="d">
 
     <Grid Margin="5,5,15,5">
@@ -64,7 +65,8 @@
                         Content="Start Recording"
                         Margin="0,0,8,0"
                         Padding="15,8"
-                        Click="StartButton_Click" />
+                        Click="StartButton_Click"
+                        Appearance="Danger" />
                     <ui:Button
                         x:Name="PauseButton"
                         Content="Pause"
@@ -78,7 +80,7 @@
                         Margin="0,0,8,0"
                         Padding="15,8"
                         Click="ResumeButton_Click"
-                        Appearance="Secondary" />
+                        Appearance="Danger" />
                     <ui:Button
                         x:Name="StopButton"
                         Content="Stop"
@@ -86,12 +88,19 @@
                         Click="StopButton_Click"
                         Appearance="Secondary" />
                 </StackPanel>
-                <TextBlock
-                    x:Name="RecordingStatusText"
+                <Border
+                    x:Name="RecordingStatusBanner"
                     Margin="0,8,0,0"
                     HorizontalAlignment="Center"
-                    FontWeight="SemiBold"
-                    Text="Ready — press Start Recording" />
+                    CornerRadius="5"
+                    Padding="18,5">
+                    <TextBlock
+                        x:Name="RecordingStatusText"
+                        HorizontalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Text="Ready — press Start Recording" />
+                </Border>
                 <TextBlock
                     x:Name="TranscriptFileText"
                     Margin="0,3,0,0"
