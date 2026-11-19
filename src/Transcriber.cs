@@ -92,8 +92,9 @@ namespace LiveCaptionsTranscriber
                 lock (transcriptLock)
                 {
                     transcriptUpdate = transcriptAssembler.Apply(transcriptSnapshot);
-                    Caption.FullTranscriptionText = transcriptUpdate.FullText;
-                    TranscriptFileWriter.Write(transcriptUpdate.FullText);
+                    string formattedText = TranscriptParagraphFormatter.Format(transcriptUpdate.FullText);
+                    Caption.FullTranscriptionText = formattedText;
+                    TranscriptFileWriter.Write(formattedText);
                 }
 
                 if (!string.IsNullOrWhiteSpace(transcriptUpdate.NewlyCommittedText))
@@ -297,8 +298,9 @@ namespace LiveCaptionsTranscriber
 
                 if (Caption != null)
                 {
-                    Caption.FullTranscriptionText = transcriptAssembler.FullText;
-                    TranscriptFileWriter.Write(transcriptAssembler.FullText);
+                    string formattedText = TranscriptParagraphFormatter.Format(transcriptAssembler.FullText);
+                    Caption.FullTranscriptionText = formattedText;
+                    TranscriptFileWriter.Write(formattedText);
                 }
             }
         }

@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\utils\TranscriptAssembler.cs" Link="TranscriptAssembler.cs" />
+    <Compile Include="..\..\src\utils\TranscriptParagraphFormatter.cs" Link="TranscriptParagraphFormatter.cs" />
   </ItemGroup>
 </Project>

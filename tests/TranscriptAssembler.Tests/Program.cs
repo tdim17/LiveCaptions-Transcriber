@@ -150,6 +150,37 @@ static void WeakAnchorStartsAndThenUpdatesNewSegment()
         nameof(WeakAnchorStartsAndThenUpdatesNewSegment));
 }
 
+static void FormatsReadableParagraphsWithoutChangingText()
+{
+    const string source =
+        "One sentence. Two sentence. Three sentence. Four sentence. " +
+        "Five sentence. Six sentence. Seven unfinished";
+    string formatted = TranscriptParagraphFormatter.Format(source);
+    string[] paragraphs = formatted.Split(
+        Environment.NewLine + Environment.NewLine,
+        StringSplitOptions.None);
+
+    AssertEqual("3", paragraphs.Length.ToString(),
+        nameof(FormatsReadableParagraphsWithoutChangingText) + " paragraph count");
+    AssertEqual(source, formatted.Replace(Environment.NewLine + Environment.NewLine, " "),
+        nameof(FormatsReadableParagraphsWithoutChangingText) + " text preservation");
+}
+
+static void DoesNotSplitCommonAbbreviations()
+{
+    const string source =
+        "Dr. Smith works in the U.S. today. Second sentence. Third sentence.";
+    string formatted = TranscriptParagraphFormatter.Format(source, 1, 500);
+    string separator = Environment.NewLine + Environment.NewLine;
+
+    AssertTrue(!formatted.Contains("Dr." + separator, StringComparison.Ordinal),
+        nameof(DoesNotSplitCommonAbbreviations) + " title");
+    AssertTrue(!formatted.Contains("U.S." + separator, StringComparison.Ordinal),
+        nameof(DoesNotSplitCommonAbbreviations) + " initials");
+    AssertEqual("3", formatted.Split(separator, StringSplitOptions.None).Length.ToString(),
+        nameof(DoesNotSplitCommonAbbreviations) + " paragraph count");
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
@@ -159,5 +190,7 @@ RestartKeepsPreviousSegment();
 PunctuationRevisionsDoNotShiftWordStarts();
 LeadingPunctuationDoesNotMoveWindowStart();
 WeakAnchorStartsAndThenUpdatesNewSegment();
+FormatsReadableParagraphsWithoutChangingText();
+DoesNotSplitCommonAbbreviations();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");
