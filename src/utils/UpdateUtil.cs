@@ -5,9 +5,9 @@ namespace LiveCaptionsTranscriber.utils
 {
     public static class UpdateUtil
     {
-        public const string GitHubRepoUrl = "https://github.com/darshankparmar/LiveCaptions-Transcriber";
-        public const string GitHubReleasesUrl = "https://github.com/darshankparmar/LiveCaptions-Transcriber/releases";
-        public const string GitHubLatestReleaseApi = "https://api.github.com/repos/darshankparmar/LiveCaptions-Transcriber/releases/latest";
+        public const string GitHubRepoUrl = "https://github.com/tdim17/LiveCaptions-Transcriber";
+        public const string GitHubReleasesUrl = "https://github.com/tdim17/LiveCaptions-Transcriber/releases";
+        public const string GitHubLatestReleaseApi = "https://api.github.com/repos/tdim17/LiveCaptions-Transcriber/releases/latest";
 
         public static async Task<string> GetLatestVersion()
         {
@@ -18,8 +18,13 @@ namespace LiveCaptionsTranscriber.utils
                 Timeout = TimeSpan.FromSeconds(3)
             };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveCaptions-Transcriber");
-            var response = await client.GetStringAsync(apiUrl);
-            using var doc = JsonDocument.Parse(response);
+            using var response = await client.GetAsync(apiUrl);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return string.Empty;
+
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
             var latestVersionRaw = doc.RootElement.GetProperty("tag_name").GetString();
             var latestVersion = string.IsNullOrEmpty(latestVersionRaw)
                 ? String.Empty
