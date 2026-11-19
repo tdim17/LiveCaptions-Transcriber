@@ -19,7 +19,10 @@ namespace LiveCaptionsTranscriber.utils
         public static readonly string DiagnosticsDirectory =
             Path.Combine(ExecutableDirectory, "diagnostics");
 
+        public static readonly string ProductParentDirectory =
+            Directory.GetParent(ExecutableDirectory)?.FullName ?? ExecutableDirectory;
+
         public static readonly string TranscriptsDirectory =
-            Path.Combine(ExecutableDirectory, "transcripts");
+            Path.Combine(ProductParentDirectory, "Results_txt");
     }
 }

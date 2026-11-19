@@ -7,12 +7,12 @@ namespace LiveCaptionsTranscriber.utils
     {
         private static readonly object SyncRoot = new();
         private static readonly string SessionTimestamp =
-            DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
         private static string lastWrittenText = string.Empty;
 
         public static readonly string FilePath = Path.Combine(
             AppPaths.TranscriptsDirectory,
-            $"transcript-{SessionTimestamp}.txt");
+            $"{SessionTimestamp}_transcript.txt");
 
         public static void Write(string text)
         {
