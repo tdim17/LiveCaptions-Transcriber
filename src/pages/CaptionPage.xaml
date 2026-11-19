@@ -27,6 +27,7 @@
         <!-- Current Sentence -->
         <ui:Card
             Grid.Row="0"
+            Height="64"
             Padding="8"
             VerticalAlignment="Stretch">
             <Grid>
@@ -42,7 +43,8 @@
                     FontWeight="SemiBold"
                     Style="{StaticResource CaptionBlockStyle}"
                     Text="{Binding DisplayOriginalCaption, UpdateSourceTrigger=PropertyChanged}"
-                    Foreground="DodgerBlue" />
+                    Foreground="DodgerBlue"
+                    VerticalAlignment="Center" />
                 <TextBlock
                     Grid.Column="1"
                     Text="Current"
