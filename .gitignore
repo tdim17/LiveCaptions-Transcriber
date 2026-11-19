@@ -369,3 +369,4 @@ enable-raw-caption-log.flag
 diagnostics/
 setting.json
 transcription_history.db
+transcripts/

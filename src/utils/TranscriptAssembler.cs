@@ -19,6 +19,7 @@ namespace LiveCaptionsTranscriber.utils
         private string previousWindow = string.Empty;
         private int windowStart;
         private int committedLength;
+        private bool appendNextWindow;
 
         public TranscriptAssembler(int safetySentenceCount = 2)
         {
@@ -41,9 +42,20 @@ namespace LiveCaptionsTranscriber.utils
 
             if (string.IsNullOrEmpty(previousWindow))
             {
-                document = currentWindow;
+                if (appendNextWindow && !string.IsNullOrEmpty(document))
+                {
+                    int separatorLength = SeparatorLength(document, currentWindow);
+                    windowStart = document.Length + separatorLength;
+                    document = Join(document, currentWindow);
+                }
+                else
+                {
+                    document = currentWindow;
+                    windowStart = 0;
+                }
+
                 previousWindow = currentWindow;
-                windowStart = 0;
+                appendNextWindow = false;
             }
             else
             {
@@ -119,12 +131,22 @@ namespace LiveCaptionsTranscriber.utils
             return pending;
         }
 
+        public string StartNewSegment()
+        {
+            string pending = FlushPending();
+            previousWindow = string.Empty;
+            windowStart = document.Length;
+            appendNextWindow = !string.IsNullOrEmpty(document);
+            return pending;
+        }
+
         public void Reset()
         {
             document = string.Empty;
             previousWindow = string.Empty;
             windowStart = 0;
             committedLength = 0;
+            appendNextWindow = false;
         }
 
         private static string Normalize(string text)

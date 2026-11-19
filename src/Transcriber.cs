@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Collections.Concurrent;
 using System.Windows.Automation;
 
 using LiveCaptionsTranscriber.models;
@@ -14,7 +15,11 @@ namespace LiveCaptionsTranscriber
         private static Caption? caption = null;
         private static Setting? setting = null;
 
-        private static readonly Queue<string> pendingTextQueue = new();
+        private static readonly ConcurrentQueue<string> pendingTextQueue = new();
+        private static readonly TranscriptAssembler transcriptAssembler = new(2);
+        private static readonly object transcriptLock = new();
+        private static int stopping;
+        private static int shutdownStarted;
 
 
         public static AutomationElement? Window
@@ -45,10 +50,7 @@ namespace LiveCaptionsTranscriber
 
         public static void SyncLoop()
         {
-            int idleCount = 0;
-            int syncCount = 0;
-
-            while (true)
+            while (Volatile.Read(ref stopping) == 0)
             {
                 if (Window == null)
                 {
@@ -68,6 +70,7 @@ namespace LiveCaptionsTranscriber
                 }
                 catch (ElementNotAvailableException)
                 {
+                    FinalizeCurrentSegment();
                     Window = null;
                     continue;
                 }
@@ -82,6 +85,19 @@ namespace LiveCaptionsTranscriber
                 // Note: For certain languages (such as Japanese), LiveCaptions excessively uses `\n`.
                 // Replace redundant `\n` within sentences with comma or period.
                 fullText = TextUtil.ReplaceNewlines(fullText, TextUtil.MEDIUM_THRESHOLD);
+
+                TranscriptUpdate transcriptUpdate;
+                lock (transcriptLock)
+                {
+                    transcriptUpdate = transcriptAssembler.Apply(fullText);
+                    Caption.FullTranscriptionText = transcriptUpdate.FullText;
+                    TranscriptFileWriter.Write(transcriptUpdate.FullText);
+                }
+
+                if (!string.IsNullOrWhiteSpace(transcriptUpdate.NewlyCommittedText))
+                    pendingTextQueue.Enqueue(transcriptUpdate.NewlyCommittedText);
+                if (transcriptUpdate.SafetyViolation)
+                    Console.WriteLine("[WARNING] Live Captions changed text outside the two-sentence safety window.");
 
                 // Prevent adding the last sentence from previous running to log cards
                 // before the first sentence is completed.
@@ -136,28 +152,6 @@ namespace LiveCaptionsTranscriber
                 if (string.CompareOrdinal(Caption.OriginalCaption, latestCaption) != 0)
                 {
                     Caption.OriginalCaption = latestCaption;
-
-                    idleCount = 0;
-                    if (Array.IndexOf(TextUtil.PUNC_EOS, Caption.OriginalCaption[^1]) != -1)
-                    {
-                        syncCount = 0;
-                        pendingTextQueue.Enqueue(Caption.OriginalCaption);
-                        // Append completed sentence to full transcription
-                        Caption.AppendToFullTranscription(Caption.OriginalCaption);
-                    }
-                    else if (Encoding.UTF8.GetByteCount(Caption.OriginalCaption) >= TextUtil.SHORT_THRESHOLD)
-                        syncCount++;
-                }
-                else
-                    idleCount++;
-
-                // `TranslateFlag` determines whether this sentence should be translated.
-                // When `OriginalCaption` remains unchanged, `idleCount` +1; when `OriginalCaption` changes, `MaxSyncInterval` +1.
-                if (syncCount > Setting.MaxSyncInterval ||
-                    idleCount == Setting.MaxIdleInterval)
-                {
-                    syncCount = 0;
-                    pendingTextQueue.Enqueue(Caption.OriginalCaption);
                 }
 
                 Thread.Sleep(25);
@@ -166,7 +160,7 @@ namespace LiveCaptionsTranscriber
 
         public static async Task TranscribeLoop()
         {
-            while (true)
+            while (Volatile.Read(ref stopping) == 0)
             {
                 // Check LiveCaptions.exe still alive
                 if (Window == null)
@@ -177,20 +171,18 @@ namespace LiveCaptionsTranscriber
                 }
 
                 // Log transcription only
-                if (pendingTextQueue.Count > 0)
+                if (pendingTextQueue.TryDequeue(out string? originalSnapshot))
                 {
-                    var originalSnapshot = pendingTextQueue.Dequeue();
-                    bool isOverwrite = await IsOverwrite(originalSnapshot);
-                    await LogOnly(originalSnapshot, isOverwrite);
+                    await LogOnly(originalSnapshot);
                 }
 
-                Thread.Sleep(40);
+                await Task.Delay(40);
             }
         }
 
         public static async Task DisplayLoop()
         {
-            while (true)
+            while (Volatile.Read(ref stopping) == 0)
             {
                 // Clear translation display since we're transcription-only
                 Caption.TranslatedCaption = string.Empty;
@@ -263,6 +255,50 @@ namespace LiveCaptionsTranscriber
                 return false;
             double similarity = TextUtil.Similarity(originalText, lastOriginalText);
             return similarity > 0.66;
+        }
+
+        public static void ClearTranscription()
+        {
+            lock (transcriptLock)
+            {
+                transcriptAssembler.Reset();
+                while (pendingTextQueue.TryDequeue(out _))
+                {
+                }
+                Caption?.ClearFullTranscription();
+                TranscriptFileWriter.Clear();
+            }
+        }
+
+        public static void Shutdown()
+        {
+            if (Interlocked.Exchange(ref shutdownStarted, 1) != 0)
+                return;
+
+            Volatile.Write(ref stopping, 1);
+            FinalizeCurrentSegment();
+
+            while (pendingTextQueue.TryDequeue(out string? text))
+            {
+                if (!string.IsNullOrWhiteSpace(text))
+                    LogOnly(text).GetAwaiter().GetResult();
+            }
+        }
+
+        private static void FinalizeCurrentSegment()
+        {
+            lock (transcriptLock)
+            {
+                string pending = transcriptAssembler.StartNewSegment();
+                if (!string.IsNullOrWhiteSpace(pending))
+                    pendingTextQueue.Enqueue(pending);
+
+                if (Caption != null)
+                {
+                    Caption.FullTranscriptionText = transcriptAssembler.FullText;
+                    TranscriptFileWriter.Write(transcriptAssembler.FullText);
+                }
+            }
         }
     }
 }

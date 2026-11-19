@@ -81,10 +81,28 @@ static void ChangesBeyondSafetyWindowAreReported()
     AssertTrue(update.SafetyViolation, nameof(ChangesBeyondSafetyWindowAreReported));
 }
 
+static void RestartKeepsPreviousSegment()
+{
+    var assembler = new TranscriptAssembler(2);
+    assembler.Apply("Before restart. Still pending.");
+    string flushed = assembler.StartNewSegment();
+    var update = assembler.Apply("After restart. New window.");
+
+    AssertEqual(
+        "Before restart. Still pending.",
+        flushed,
+        nameof(RestartKeepsPreviousSegment) + " flushed text");
+    AssertEqual(
+        "Before restart. Still pending. After restart. New window.",
+        update.FullText,
+        nameof(RestartKeepsPreviousSegment));
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
 AbbreviationDoesNotConsumeSafetySlot();
 ChangesBeyondSafetyWindowAreReported();
+RestartKeepsPreviousSegment();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");

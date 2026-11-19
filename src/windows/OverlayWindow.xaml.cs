@@ -177,7 +177,7 @@ namespace LiveCaptionsTranscriber
         {
             try
             {
-                Transcriber.Caption.ClearFullTranscription();
+                Transcriber.ClearTranscription();
                 ShowOverlayMessage("Cleared");
             }
             catch
