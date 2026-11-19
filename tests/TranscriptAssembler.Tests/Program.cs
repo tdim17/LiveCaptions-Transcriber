@@ -122,6 +122,34 @@ static void PunctuationRevisionsDoNotShiftWordStarts()
         nameof(PunctuationRevisionsDoNotShiftWordStarts) + " plus");
 }
 
+static void LeadingPunctuationDoesNotMoveWindowStart()
+{
+    var assembler = new TranscriptAssembler();
+    assembler.Apply("Either you know in meetings or email.");
+    var update = assembler.Apply("Either, you know, in meetings or email.");
+
+    AssertEqual(
+        "Either, you know, in meetings or email.",
+        update.FullText,
+        nameof(LeadingPunctuationDoesNotMoveWindowStart));
+    AssertTrue(!update.SafetyViolation,
+        nameof(LeadingPunctuationDoesNotMoveWindowStart) + " safety");
+}
+
+static void WeakAnchorStartsAndThenUpdatesNewSegment()
+{
+    var assembler = new TranscriptAssembler();
+    string firstSegment = string.Join(" ", Enumerable.Repeat("Earlier stable material.", 8));
+    assembler.Apply(firstSegment);
+    assembler.Apply("Has.");
+    var update = assembler.Apply("Has been updated into a complete new segment.");
+
+    AssertEqual(
+        firstSegment + " Has been updated into a complete new segment.",
+        update.FullText,
+        nameof(WeakAnchorStartsAndThenUpdatesNewSegment));
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
@@ -129,5 +157,7 @@ VisibleSentencesStayMutable();
 ChangesBeyondSafetyWindowAreReported();
 RestartKeepsPreviousSegment();
 PunctuationRevisionsDoNotShiftWordStarts();
+LeadingPunctuationDoesNotMoveWindowStart();
+WeakAnchorStartsAndThenUpdatesNewSegment();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");

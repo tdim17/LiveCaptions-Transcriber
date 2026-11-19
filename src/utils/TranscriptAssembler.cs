@@ -49,9 +49,16 @@ namespace LiveCaptionsTranscriber.utils
             else
             {
                 var anchor = FindLongestCharacterAnchor(previousWindow, currentWindow);
+                bool sameLeadingWord = HaveSameLeadingWord(previousWindow, currentWindow);
                 if (anchor.CharacterLength < MinimumAnchorCharacters)
                 {
-                    if (windowStart == 0)
+                    if (sameLeadingWord)
+                    {
+                        document = document[..windowStart] + currentWindow;
+                    }
+                    else if (windowStart == 0 &&
+                             previousWindow.Length < 100 &&
+                             currentWindow.Length >= previousWindow.Length)
                     {
                         document = currentWindow;
                         windowStart = 0;
@@ -64,10 +71,12 @@ namespace LiveCaptionsTranscriber.utils
                 }
                 else
                 {
-                    int newWindowStart = Math.Clamp(
-                        windowStart + anchor.PreviousCharacterIndex - anchor.CurrentCharacterIndex,
-                        0,
-                        document.Length);
+                    int newWindowStart = sameLeadingWord
+                        ? windowStart
+                        : Math.Clamp(
+                            windowStart + anchor.PreviousCharacterIndex - anchor.CurrentCharacterIndex,
+                            0,
+                            document.Length);
                     int prefixLength = Math.Min(newWindowStart, document.Length);
                     string candidate = document[..prefixLength] + currentWindow;
 
@@ -141,6 +150,17 @@ namespace LiveCaptionsTranscriber.utils
         private static string Normalize(string text)
         {
             return Whitespace().Replace(text, " ").Trim();
+        }
+
+        private static bool HaveSameLeadingWord(string previous, string current)
+        {
+            Match previousMatch = LeadingWord().Match(previous);
+            Match currentMatch = LeadingWord().Match(current);
+            return previousMatch.Success && currentMatch.Success &&
+                   string.Equals(
+                       previousMatch.Groups[1].Value,
+                       currentMatch.Groups[1].Value,
+                       StringComparison.OrdinalIgnoreCase);
         }
 
         private static string Join(string prefix, string suffix)
@@ -288,6 +308,9 @@ namespace LiveCaptionsTranscriber.utils
 
         [GeneratedRegex(@"\s+")]
         private static partial Regex Whitespace();
+
+        [GeneratedRegex(@"^[^\p{L}\p{N}_]*([\p{L}\p{N}_]+)")]
+        private static partial Regex LeadingWord();
 
         private readonly record struct CharacterAnchor(
             int PreviousCharacterIndex,
