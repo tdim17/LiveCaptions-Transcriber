@@ -7,25 +7,14 @@ namespace LiveCaptionsTranscriber.utils
     {
         private const int MinimumAnchorCharacters = 12;
 
-        private static readonly HashSet<string> Abbreviations = new(
-            StringComparer.OrdinalIgnoreCase)
-        {
-            "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs",
-            "etc", "e.g", "i.e"
-        };
-
-        private readonly int safetySentenceCount;
         private string document = string.Empty;
         private string previousWindow = string.Empty;
         private int windowStart;
         private int committedLength;
         private bool appendNextWindow;
 
-        public TranscriptAssembler(int safetySentenceCount = 2)
+        public TranscriptAssembler()
         {
-            if (safetySentenceCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(safetySentenceCount));
-            this.safetySentenceCount = safetySentenceCount;
         }
 
         public string FullText => document;
@@ -62,7 +51,7 @@ namespace LiveCaptionsTranscriber.utils
                 var anchor = FindLongestCharacterAnchor(previousWindow, currentWindow);
                 if (anchor.CharacterLength < MinimumAnchorCharacters)
                 {
-                    if (committedLength == 0)
+                    if (windowStart == 0)
                     {
                         document = currentWindow;
                         windowStart = 0;
@@ -107,7 +96,7 @@ namespace LiveCaptionsTranscriber.utils
                 previousWindow = currentWindow;
             }
 
-            int safeBoundary = FindSafeBoundary(document, safetySentenceCount);
+            int safeBoundary = windowStart;
             if (safeBoundary < committedLength)
             {
                 safetyViolation = true;
@@ -166,46 +155,6 @@ namespace LiveCaptionsTranscriber.utils
         private static int SeparatorLength(string prefix, string suffix)
         {
             return string.IsNullOrWhiteSpace(prefix) || string.IsNullOrWhiteSpace(suffix) ? 0 : 1;
-        }
-
-        private static int FindSafeBoundary(string text, int protectedSentenceCount)
-        {
-            var boundaries = new List<int>();
-            for (int index = 0; index < text.Length; index++)
-            {
-                if (text[index] is not ('.' or '!' or '?'))
-                    continue;
-
-                int punctuationStart = index;
-                while (index + 1 < text.Length && text[index + 1] is '.' or '!' or '?')
-                    index++;
-
-                int boundaryEnd = index + 1;
-                while (boundaryEnd < text.Length && text[boundaryEnd] is '"' or '\'' or '”' or '’' or ')' or ']')
-                    boundaryEnd++;
-
-                if (boundaryEnd < text.Length && !char.IsWhiteSpace(text[boundaryEnd]))
-                    continue;
-                if (text[punctuationStart] == '.' && IsAbbreviation(text, punctuationStart))
-                    continue;
-
-                while (boundaryEnd < text.Length && char.IsWhiteSpace(text[boundaryEnd]))
-                    boundaryEnd++;
-                boundaries.Add(boundaryEnd);
-            }
-
-            int commitBoundaryIndex = boundaries.Count - protectedSentenceCount - 1;
-            return commitBoundaryIndex >= 0 ? boundaries[commitBoundaryIndex] : 0;
-        }
-
-        private static bool IsAbbreviation(string text, int periodIndex)
-        {
-            int wordStart = periodIndex - 1;
-            while (wordStart >= 0 && (char.IsLetter(text[wordStart]) || text[wordStart] == '.'))
-                wordStart--;
-            string word = text[(wordStart + 1)..periodIndex].Trim('.');
-            return Abbreviations.Contains(word) ||
-                   (word.Length == 1 && char.IsUpper(word[0]));
         }
 
         private static CharacterAnchor FindLongestCharacterAnchor(string previous, string current)

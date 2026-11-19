@@ -16,7 +16,7 @@ static void AssertTrue(bool value, string name)
 
 static void TemporaryPeriodsAreReplaced()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     assembler.Apply("Italy.");
     assembler.Apply("Italy from.");
     assembler.Apply("Italy from the first.");
@@ -29,15 +29,13 @@ static void TemporaryPeriodsAreReplaced()
         "Italy from the first day you took office. Next sentence. Third sentence.",
         update.FullText,
         nameof(TemporaryPeriodsAreReplaced));
-    AssertEqual(
-        "Italy from the first day you took office.",
-        update.NewlyCommittedText,
+    AssertEqual(string.Empty, update.NewlyCommittedText,
         nameof(TemporaryPeriodsAreReplaced) + " committed text");
 }
 
 static void RollingWindowKeepsDroppedHistory()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     assembler.Apply("One complete. Two complete. Three current.");
     var update = assembler.Apply("Two complete. Three current. Four current.");
 
@@ -45,11 +43,15 @@ static void RollingWindowKeepsDroppedHistory()
         "One complete. Two complete. Three current. Four current.",
         update.FullText,
         nameof(RollingWindowKeepsDroppedHistory));
+    AssertEqual(
+        "One complete.",
+        update.NewlyCommittedText,
+        nameof(RollingWindowKeepsDroppedHistory) + " committed text");
 }
 
 static void PreviousSentenceCanStillChange()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     assembler.Apply("One stable. Second draft. Third draft.");
     var update = assembler.Apply("One stable. Second corrected. Third draft.");
 
@@ -60,21 +62,19 @@ static void PreviousSentenceCanStillChange()
     AssertTrue(!update.SafetyViolation, nameof(PreviousSentenceCanStillChange) + " safety");
 }
 
-static void AbbreviationDoesNotConsumeSafetySlot()
+static void VisibleSentencesStayMutable()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     var update = assembler.Apply("Mr. Smith arrived. Second sentence. Third sentence.");
 
-    AssertEqual(
-        "Mr. Smith arrived.",
-        update.NewlyCommittedText,
-        nameof(AbbreviationDoesNotConsumeSafetySlot));
+    AssertEqual(string.Empty, update.NewlyCommittedText, nameof(VisibleSentencesStayMutable));
 }
 
 static void ChangesBeyondSafetyWindowAreReported()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     assembler.Apply("One sentence. Two sentence. Three sentence. Four sentence.");
+    assembler.Apply("Two sentence. Three sentence. Four sentence.");
     var update = assembler.Apply(
         "One changed. Two sentence. Three sentence. Four sentence.");
 
@@ -83,7 +83,7 @@ static void ChangesBeyondSafetyWindowAreReported()
 
 static void RestartKeepsPreviousSegment()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     assembler.Apply("Before restart. Still pending.");
     string flushed = assembler.StartNewSegment();
     var update = assembler.Apply("After restart. New window.");
@@ -100,7 +100,7 @@ static void RestartKeepsPreviousSegment()
 
 static void PunctuationRevisionsDoNotShiftWordStarts()
 {
-    var assembler = new TranscriptAssembler(2);
+    var assembler = new TranscriptAssembler();
     assembler.Apply(
         "Evil was about to walk in that door. Four teenage girls, their frozen yogurt shop. " +
         "Just a tragedy. They were each shot, execution style, cold blooded. Who killed these girls");
@@ -125,7 +125,7 @@ static void PunctuationRevisionsDoNotShiftWordStarts()
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
-AbbreviationDoesNotConsumeSafetySlot();
+VisibleSentencesStayMutable();
 ChangesBeyondSafetyWindowAreReported();
 RestartKeepsPreviousSegment();
 PunctuationRevisionsDoNotShiftWordStarts();

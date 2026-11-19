@@ -16,7 +16,7 @@ namespace LiveCaptionsTranscriber
         private static Setting? setting = null;
 
         private static readonly ConcurrentQueue<string> pendingTextQueue = new();
-        private static readonly TranscriptAssembler transcriptAssembler = new(2);
+        private static readonly TranscriptAssembler transcriptAssembler = new();
         private static readonly object transcriptLock = new();
         private static int stopping;
         private static int shutdownStarted;
