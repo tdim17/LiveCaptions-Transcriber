@@ -5,7 +5,7 @@ namespace LiveCaptionsTranscriber.utils
 {
     public sealed partial class TranscriptAssembler
     {
-        private const int MinimumAnchorCharacters = 4;
+        private const int MinimumAnchorCharacters = 12;
 
         private static readonly HashSet<string> Abbreviations = new(
             StringComparer.OrdinalIgnoreCase)
@@ -59,7 +59,7 @@ namespace LiveCaptionsTranscriber.utils
             }
             else
             {
-                var anchor = FindLongestTokenAnchor(previousWindow, currentWindow);
+                var anchor = FindLongestCharacterAnchor(previousWindow, currentWindow);
                 if (anchor.CharacterLength < MinimumAnchorCharacters)
                 {
                     if (committedLength == 0)
@@ -208,74 +208,150 @@ namespace LiveCaptionsTranscriber.utils
                    (word.Length == 1 && char.IsUpper(word[0]));
         }
 
-        private static TokenAnchor FindLongestTokenAnchor(string previous, string current)
+        private static CharacterAnchor FindLongestCharacterAnchor(string previous, string current)
         {
-            var previousTokens = Tokenize(previous);
-            var currentTokens = Tokenize(current);
-            if (previousTokens.Count == 0 || currentTokens.Count == 0)
+            if (previous.Length == 0 || current.Length == 0)
                 return default;
 
-            int[] priorRow = new int[currentTokens.Count + 1];
-            int[] row = new int[currentTokens.Count + 1];
+            var states = BuildSuffixAutomaton(previous);
+            int stateIndex = 0;
+            int currentLength = 0;
             int bestLength = 0;
-            int bestPreviousEnd = 0;
             int bestCurrentEnd = 0;
+            int bestStateIndex = 0;
 
-            for (int previousIndex = 1; previousIndex <= previousTokens.Count; previousIndex++)
+            for (int currentIndex = 0; currentIndex < current.Length; currentIndex++)
             {
-                Array.Clear(row);
-                for (int currentIndex = 1; currentIndex <= currentTokens.Count; currentIndex++)
+                char value = current[currentIndex];
+                while (stateIndex != 0 && !states[stateIndex].Transitions.ContainsKey(value))
                 {
-                    if (!string.Equals(
-                            previousTokens[previousIndex - 1].Value,
-                            currentTokens[currentIndex - 1].Value,
-                            StringComparison.Ordinal))
-                        continue;
-
-                    row[currentIndex] = priorRow[currentIndex - 1] + 1;
-                    if (row[currentIndex] > bestLength)
-                    {
-                        bestLength = row[currentIndex];
-                        bestPreviousEnd = previousIndex;
-                        bestCurrentEnd = currentIndex;
-                    }
+                    stateIndex = states[stateIndex].Link;
+                    currentLength = Math.Min(currentLength, states[stateIndex].Length);
                 }
-                (priorRow, row) = (row, priorRow);
+
+                if (states[stateIndex].Transitions.TryGetValue(value, out int nextState))
+                {
+                    stateIndex = nextState;
+                    currentLength++;
+                }
+                else
+                {
+                    stateIndex = 0;
+                    currentLength = 0;
+                }
+
+                if (currentLength > bestLength)
+                {
+                    bestLength = currentLength;
+                    bestCurrentEnd = currentIndex;
+                    bestStateIndex = stateIndex;
+                }
             }
 
             if (bestLength == 0)
                 return default;
 
-            int previousStartToken = bestPreviousEnd - bestLength;
-            int currentStartToken = bestCurrentEnd - bestLength;
-            int previousCharacterIndex = previousTokens[previousStartToken].Index;
-            int currentCharacterIndex = currentTokens[currentStartToken].Index;
-            int previousCharacterEnd = previousTokens[bestPreviousEnd - 1].End;
+            bestStateIndex = FindStateForLength(states, bestStateIndex, bestLength);
+            int previousEnd = states[bestStateIndex].FirstPosition;
 
-            return new TokenAnchor(
-                previousCharacterIndex,
-                currentCharacterIndex,
-                previousCharacterEnd - previousCharacterIndex);
+            return new CharacterAnchor(
+                previousEnd - bestLength + 1,
+                bestCurrentEnd - bestLength + 1,
+                bestLength);
         }
 
-        private static List<TokenSpan> Tokenize(string text)
+        private static List<SuffixState> BuildSuffixAutomaton(string text)
         {
-            return Tokens().Matches(text)
-                .Select(match => new TokenSpan(match.Value, match.Index, match.Index + match.Length))
-                .ToList();
+            var states = new List<SuffixState>(text.Length * 2)
+            {
+                new() { Link = -1 }
+            };
+            int last = 0;
+
+            for (int position = 0; position < text.Length; position++)
+            {
+                char value = text[position];
+                int current = states.Count;
+                states.Add(new SuffixState
+                {
+                    Length = states[last].Length + 1,
+                    FirstPosition = position
+                });
+
+                int parent = last;
+                while (parent >= 0 && !states[parent].Transitions.ContainsKey(value))
+                {
+                    states[parent].Transitions[value] = current;
+                    parent = states[parent].Link;
+                }
+
+                if (parent < 0)
+                {
+                    states[current].Link = 0;
+                }
+                else
+                {
+                    int target = states[parent].Transitions[value];
+                    if (states[parent].Length + 1 == states[target].Length)
+                    {
+                        states[current].Link = target;
+                    }
+                    else
+                    {
+                        int clone = states.Count;
+                        states.Add(new SuffixState
+                        {
+                            Length = states[parent].Length + 1,
+                            Link = states[target].Link,
+                            FirstPosition = states[target].FirstPosition,
+                            Transitions = new Dictionary<char, int>(states[target].Transitions)
+                        });
+
+                        while (parent >= 0 &&
+                               states[parent].Transitions.TryGetValue(value, out int linked) &&
+                               linked == target)
+                        {
+                            states[parent].Transitions[value] = clone;
+                            parent = states[parent].Link;
+                        }
+
+                        states[target].Link = clone;
+                        states[current].Link = clone;
+                    }
+                }
+
+                last = current;
+            }
+
+            return states;
+        }
+
+        private static int FindStateForLength(
+            IReadOnlyList<SuffixState> states,
+            int stateIndex,
+            int length)
+        {
+            while (states[stateIndex].Link >= 0 &&
+                   states[states[stateIndex].Link].Length >= length)
+                stateIndex = states[stateIndex].Link;
+            return stateIndex;
         }
 
         [GeneratedRegex(@"\s+")]
         private static partial Regex Whitespace();
 
-        [GeneratedRegex(@"[\p{L}\p{N}_]+(?:['’][\p{L}\p{N}_]+)*|[^\s]")]
-        private static partial Regex Tokens();
-
-        private readonly record struct TokenSpan(string Value, int Index, int End);
-        private readonly record struct TokenAnchor(
+        private readonly record struct CharacterAnchor(
             int PreviousCharacterIndex,
             int CurrentCharacterIndex,
             int CharacterLength);
+
+        private sealed class SuffixState
+        {
+            public int Length { get; set; }
+            public int Link { get; set; }
+            public int FirstPosition { get; set; }
+            public Dictionary<char, int> Transitions { get; set; } = new();
+        }
     }
 
     public readonly record struct TranscriptUpdate(

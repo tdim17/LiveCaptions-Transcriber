@@ -98,11 +98,36 @@ static void RestartKeepsPreviousSegment()
         nameof(RestartKeepsPreviousSegment));
 }
 
+static void PunctuationRevisionsDoNotShiftWordStarts()
+{
+    var assembler = new TranscriptAssembler(2);
+    assembler.Apply(
+        "Evil was about to walk in that door. Four teenage girls, their frozen yogurt shop. " +
+        "Just a tragedy. They were each shot, execution style, cold blooded. Who killed these girls");
+    assembler.Apply(
+        "Evil was about to walk in that door. Four teenage girls, their frozen yogurt shop. " +
+        "Just a tragedy. They were each shot, execution style, cold blooded. Who killed these girls? " +
+        "Wherever you listen to podcasts or listen ad free with twenty twenty true crime.");
+    var update = assembler.Apply(
+        "Evil was about to walk in that door. Four teenage girls, their frozen yogurt shop. " +
+        "Just a tragedy. They were each shot execution style, cold blooded. Who killed these girls? " +
+        "Wherever you listen to podcasts or listen ad free with twenty twenty true crime. " +
+        "Plus you're watching America's number one streaming News Live.");
+
+    AssertTrue(
+        update.FullText.Contains("Who killed these girls", StringComparison.Ordinal),
+        nameof(PunctuationRevisionsDoNotShiftWordStarts) + " who");
+    AssertTrue(
+        update.FullText.Contains("Plus you're watching", StringComparison.Ordinal),
+        nameof(PunctuationRevisionsDoNotShiftWordStarts) + " plus");
+}
+
 TemporaryPeriodsAreReplaced();
 RollingWindowKeepsDroppedHistory();
 PreviousSentenceCanStillChange();
 AbbreviationDoesNotConsumeSafetySlot();
 ChangesBeyondSafetyWindowAreReported();
 RestartKeepsPreviousSegment();
+PunctuationRevisionsDoNotShiftWordStarts();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");
