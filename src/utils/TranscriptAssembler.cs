@@ -65,8 +65,10 @@ namespace LiveCaptionsTranscriber.utils
                     }
                     else
                     {
-                        document = Join(document[..committedLength], currentWindow);
-                        windowStart = committedLength + SeparatorLength(document[..committedLength], currentWindow);
+                        int previousDocumentLength = document.Length;
+                        int separatorLength = SeparatorLength(document, currentWindow);
+                        document = Join(document, currentWindow);
+                        windowStart = previousDocumentLength + separatorLength;
                     }
                 }
                 else
