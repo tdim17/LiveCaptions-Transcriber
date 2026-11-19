@@ -143,11 +143,17 @@
         <ui:Card
             Grid.Row="2"
             Margin="0,5,0,0"
-            Padding="8">
+            Padding="8"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            VerticalContentAlignment="Stretch">
             <ScrollViewer
                 x:Name="TranscriptionScrollViewer"
+                HorizontalAlignment="Stretch"
                 VerticalScrollBarVisibility="Auto"
-                HorizontalScrollBarVisibility="Disabled">
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalAlignment="Stretch">
                 <TextBlock
                     x:Name="FullTranscription"
                     Background="Transparent"
