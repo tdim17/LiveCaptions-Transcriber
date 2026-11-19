@@ -8,6 +8,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="CaptionPage"
     JournalEntry.KeepAlive="True"
+    ScrollViewer.CanContentScroll="False"
     VerticalAlignment="Stretch"
     mc:Ignorable="d">
 

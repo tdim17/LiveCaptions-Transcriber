@@ -12,7 +12,7 @@ using System.Reflection;
 <#
     int major = 1;
     int minor = 2;
-    int build = 2;
+    int build = 3;
     int revision = 0;
 #>
 
