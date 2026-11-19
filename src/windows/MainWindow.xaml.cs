@@ -28,11 +28,10 @@ namespace LiveCaptionsTranscriber
                 CheckForFirstUse();
                 CheckForUpdates();
                 
-                // Show overlay window on startup if enabled
+                // Keep the optional overlay disabled at startup. It can still be
+                // opened explicitly with the CC button in the title bar.
                 if (Transcriber.Setting.OverlayWindow.ShowOnStartup)
-                {
-                    ShowOverlayWindow();
-                }
+                    Transcriber.Setting.OverlayWindow.ShowOnStartup = false;
             };
 
             double screenWidth = SystemParameters.PrimaryScreenWidth;

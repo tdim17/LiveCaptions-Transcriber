@@ -75,7 +75,7 @@ A focused transcription tool that enhances Windows LiveCaptions with a modern in
 
 - **🪟 Enhanced Overlay Window**
 
-  Transparent overlay perfect for gaming, streaming, or watching videos. Features:
+  Optional transparent overlay for gaming, streaming, or watching videos. It stays disabled at application startup and can be opened manually with the **CC** button. Features:
   - Full transcription display (not just current sentence)
   - Copy/Clear buttons on hover
   - Customizable font size, color, and opacity
