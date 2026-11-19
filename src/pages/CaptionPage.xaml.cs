@@ -15,6 +15,7 @@ namespace LiveCaptionsTranscriber
         public const int CARD_HEIGHT = 110;
 
         private static CaptionPage instance;
+        private MainWindow? ownerWindow;
         public static CaptionPage Instance => instance;
 
         public CaptionPage()
@@ -27,12 +28,24 @@ namespace LiveCaptionsTranscriber
             {
                 Transcriber.Caption.PropertyChanged += TranslatedChanged;
                 Transcriber.RecordingStateChanged += RecordingStateChanged;
+                ownerWindow = Window.GetWindow(this) as MainWindow;
+                if (ownerWindow != null)
+                {
+                    ownerWindow.RootNavigation.SizeChanged += RootNavigation_SizeChanged;
+                    ConstrainToNavigationViewport(
+                        ownerWindow.RootNavigation.ActualHeight);
+                }
                 RefreshRecordingControls();
             };
             Unloaded += (s, e) =>
             {
                 Transcriber.Caption.PropertyChanged -= TranslatedChanged;
                 Transcriber.RecordingStateChanged -= RecordingStateChanged;
+                if (ownerWindow != null)
+                {
+                    ownerWindow.RootNavigation.SizeChanged -= RootNavigation_SizeChanged;
+                    ownerWindow = null;
+                }
             };
         }
 
@@ -139,6 +152,17 @@ namespace LiveCaptionsTranscriber
                 DispatcherPriority.Normal);
         }
 
+        private void RootNavigation_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            ConstrainToNavigationViewport(e.NewSize.Height);
+        }
+
+        private void ConstrainToNavigationViewport(double viewportHeight)
+        {
+            if (viewportHeight > 0)
+                Height = viewportHeight;
+        }
+
         private void RefreshRecordingControls()
         {
             RecordingState state = Transcriber.CurrentRecordingState;
@@ -163,7 +187,7 @@ namespace LiveCaptionsTranscriber
             if (state == RecordingState.Recording)
             {
                 RecordingStatusBanner.Background =
-                    new SolidColorBrush(Color.FromRgb(196, 32, 32));
+                    new SolidColorBrush(Color.FromRgb(230, 0, 0));
                 RecordingStatusText.Foreground = Brushes.White;
             }
             else if (state == RecordingState.Paused)
