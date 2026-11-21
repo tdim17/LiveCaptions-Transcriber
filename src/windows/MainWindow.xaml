@@ -39,6 +39,36 @@
                 <ui:TitleBar.TrailingContent>
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                         <ui:Button
+                            x:Name="MicrophoneButton"
+                            Margin="0,0,5,0"
+                            Appearance="Transparent"
+                            Click="MicrophoneButton_Click"
+                            Icon="{ui:SymbolIcon MicOff24,
+                                                 Filled=False}"
+                            ToolTip="Microphone audio: Off" />
+                        <ui:Button
+                            x:Name="LiveCaptionsSettingsButton"
+                            Margin="0,0,5,0"
+                            Appearance="Transparent"
+                            Click="LiveCaptionsSettingsButton_Click"
+                            Icon="{ui:SymbolIcon Settings24,
+                                                 Filled=False}"
+                            ToolTip="Live Captions Settings">
+                            <ui:Button.ContextMenu>
+                                <ContextMenu x:Name="LiveCaptionsSettingsMenu">
+                                    <MenuItem
+                                        x:Name="MicrophoneAudioMenuItem"
+                                        Header="Include microphone audio"
+                                        IsCheckable="True"
+                                        Click="MicrophoneAudioMenuItem_Click" />
+                                    <Separator />
+                                    <MenuItem
+                                        Header="Caption style..."
+                                        Click="CaptionStyleMenuItem_Click" />
+                                </ContextMenu>
+                            </ui:Button.ContextMenu>
+                        </ui:Button>
+                        <ui:Button
                             x:Name="OverlayModeButton"
                             Margin="0,0,5,0"
                             Appearance="Transparent"

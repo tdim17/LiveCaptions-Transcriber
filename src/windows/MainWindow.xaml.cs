@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using System.Diagnostics;
@@ -32,6 +33,16 @@ namespace LiveCaptionsTranscriber
                 // opened explicitly with the CC button in the title bar.
                 if (Transcriber.Setting.OverlayWindow.ShowOnStartup)
                     Transcriber.Setting.OverlayWindow.ShowOnStartup = false;
+
+                Transcriber.LiveCaptionsOptionsChanged += LiveCaptionsOptionsChanged;
+                Transcriber.RecordingStateChanged += LiveCaptionsOptionsChanged;
+                RefreshLiveCaptionsOptions();
+            };
+
+            Closed += (s, e) =>
+            {
+                Transcriber.LiveCaptionsOptionsChanged -= LiveCaptionsOptionsChanged;
+                Transcriber.RecordingStateChanged -= LiveCaptionsOptionsChanged;
             };
 
             double screenWidth = SystemParameters.PrimaryScreenWidth;
@@ -53,6 +64,98 @@ namespace LiveCaptionsTranscriber
         private void TopmostButton_Click(object sender, RoutedEventArgs e)
         {
             ToggleTopmost(!this.Topmost);
+        }
+
+        private async void MicrophoneButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ToggleMicrophoneAudio();
+        }
+
+        private async void MicrophoneAudioMenuItem_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            await ToggleMicrophoneAudio();
+        }
+
+        private async Task ToggleMicrophoneAudio()
+        {
+            MicrophoneButton.IsEnabled = false;
+            try
+            {
+                await Task.Run(Transcriber.ToggleMicrophoneAudio);
+            }
+            catch (Exception exception)
+            {
+                ShowSnackbar(
+                    "Unable to change microphone audio",
+                    exception.Message,
+                    true);
+            }
+            finally
+            {
+                RefreshLiveCaptionsOptions();
+            }
+        }
+
+        private void LiveCaptionsSettingsButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            RefreshLiveCaptionsOptions();
+            LiveCaptionsSettingsMenu.PlacementTarget = LiveCaptionsSettingsButton;
+            LiveCaptionsSettingsMenu.Placement = PlacementMode.Bottom;
+            LiveCaptionsSettingsMenu.IsOpen = true;
+        }
+
+        private void CaptionStyleMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "ms-settings:easeofaccess-closedcaptioning",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception exception)
+            {
+                ShowSnackbar(
+                    "Unable to open caption style",
+                    exception.Message,
+                    true);
+            }
+        }
+
+        private void LiveCaptionsOptionsChanged()
+        {
+            Dispatcher.BeginInvoke(new Action(RefreshLiveCaptionsOptions));
+        }
+
+        private void RefreshLiveCaptionsOptions()
+        {
+            bool microphoneRequested = Transcriber.MicrophoneAudioRequested;
+            bool isStarting =
+                Transcriber.CurrentRecordingState == models.RecordingState.Starting;
+
+            MicrophoneButton.IsEnabled = !isStarting;
+            MicrophoneAudioMenuItem.IsEnabled = !isStarting;
+            MicrophoneAudioMenuItem.IsChecked = microphoneRequested;
+            MicrophoneButton.ToolTip = microphoneRequested
+                ? "Microphone audio: On for this session"
+                : "Microphone audio: Off";
+
+            if (MicrophoneButton.Icon is SymbolIcon symbolIcon)
+            {
+                symbolIcon.Symbol = microphoneRequested
+                    ? SymbolRegular.Mic24
+                    : SymbolRegular.MicOff24;
+                symbolIcon.Filled = microphoneRequested;
+            }
+
+            MicrophoneButton.Appearance = microphoneRequested
+                ? ControlAppearance.Danger
+                : ControlAppearance.Transparent;
         }
 
         private void OverlayModeButton_Click(object sender, RoutedEventArgs e)

@@ -7,6 +7,8 @@ namespace LiveCaptionsTranscriber.utils
     {
         public static readonly string PROCESS_NAME = "LiveCaptions";
 
+        private const int MenuElementTimeoutMilliseconds = 1500;
+
         private static AutomationElement? captionsTextBlock = null;
 
         public static AutomationElement LaunchLiveCaptions()
@@ -155,6 +157,127 @@ namespace LiveCaptionsTranscriber.utils
                 }
             }
             return false;
+        }
+
+        public static void SetPreferences(
+            AutomationElement window,
+            bool? includeMicrophoneAudio = null,
+            bool? filterProfanity = null)
+        {
+            if (includeMicrophoneAudio == null && filterProfanity == null)
+                return;
+
+            AutomationElement settingsButton = WaitForElementByAId(
+                window,
+                "SettingsButton");
+            InvokeOrExpand(settingsButton);
+
+            AutomationElement preferencesButton = WaitForElementByAId(
+                window,
+                "PreferencesButton");
+            InvokeOrExpand(preferencesButton);
+
+            if (includeMicrophoneAudio != null)
+            {
+                AutomationElement microphoneItem = WaitForElementByAId(
+                    window,
+                    "MicrophoneMenuFlyoutItem");
+                SetToggleState(microphoneItem, includeMicrophoneAudio.Value);
+            }
+
+            if (filterProfanity != null)
+            {
+                // Toggling the first item can close the flyout. Re-open it before
+                // applying a second preference in the same operation.
+                if (includeMicrophoneAudio != null)
+                {
+                    settingsButton = WaitForElementByAId(window, "SettingsButton");
+                    InvokeOrExpand(settingsButton);
+                    preferencesButton = WaitForElementByAId(window, "PreferencesButton");
+                    InvokeOrExpand(preferencesButton);
+                }
+
+                AutomationElement profanityItem = WaitForElementByAId(
+                    window,
+                    "ProfanityFilterMenuFlyoutItem");
+                SetToggleState(profanityItem, filterProfanity.Value);
+            }
+
+            // Keep the Microsoft window hidden after an option is changed.
+            HideLiveCaptions(window);
+        }
+
+        private static AutomationElement WaitForElementByAId(
+            AutomationElement window,
+            string automationId)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            while (stopwatch.ElapsedMilliseconds < MenuElementTimeoutMilliseconds)
+            {
+                AutomationElement? element = FindElementByAId(window, automationId);
+                if (element != null)
+                    return element;
+                Thread.Sleep(25);
+            }
+
+            throw new InvalidOperationException(
+                $"Windows Live Captions control '{automationId}' was not found.");
+        }
+
+        private static void InvokeOrExpand(AutomationElement element)
+        {
+            if (element.TryGetCurrentPattern(
+                    ExpandCollapsePattern.Pattern,
+                    out object? expandPatternObject) &&
+                expandPatternObject is ExpandCollapsePattern expandPattern)
+            {
+                if (expandPattern.Current.ExpandCollapseState !=
+                    ExpandCollapseState.Expanded)
+                    expandPattern.Expand();
+                return;
+            }
+
+            if (element.TryGetCurrentPattern(
+                    InvokePattern.Pattern,
+                    out object? invokePatternObject) &&
+                invokePatternObject is InvokePattern invokePattern)
+            {
+                invokePattern.Invoke();
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Windows Live Captions control '{element.Current.AutomationId}' cannot be invoked.");
+        }
+
+        private static void SetToggleState(AutomationElement element, bool enabled)
+        {
+            if (element.TryGetCurrentPattern(
+                    TogglePattern.Pattern,
+                    out object? togglePatternObject) &&
+                togglePatternObject is TogglePattern togglePattern)
+            {
+                bool isEnabled = togglePattern.Current.ToggleState == ToggleState.On;
+                if (isEnabled != enabled)
+                    togglePattern.Toggle();
+                return;
+            }
+
+            // Some Windows builds expose toggle menu items through InvokePattern
+            // and SelectionItemPattern rather than TogglePattern.
+            if (element.TryGetCurrentPattern(
+                    SelectionItemPattern.Pattern,
+                    out object? selectionPatternObject) &&
+                selectionPatternObject is SelectionItemPattern selectionPattern)
+            {
+                bool isSelected = selectionPattern.Current.IsSelected;
+                if (isSelected != enabled)
+                    InvokeOrExpand(element);
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Windows Live Captions control '{element.Current.AutomationId}' does not expose a toggle state.");
         }
 
         private static void KillAllProcessesByPName(string processName)

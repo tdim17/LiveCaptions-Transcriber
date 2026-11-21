@@ -159,6 +159,7 @@
                     Background="Transparent"
                     FontSize="14"
                     LineHeight="22"
+                    Padding="0,0,10,0"
                     Style="{StaticResource CaptionBlockStyle}"
                     Text="{Binding FullTranscriptionText, UpdateSourceTrigger=PropertyChanged}"
                     Cursor="Hand"

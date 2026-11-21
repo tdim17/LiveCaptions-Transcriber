@@ -21,6 +21,7 @@ namespace LiveCaptionsTranscriber
         private static readonly object transcriptLock = new();
         private static readonly object recordingStateLock = new();
         private static int recordingState = (int)RecordingState.Ready;
+        private static bool microphoneAudioRequested;
         private static string pausedBaselineSnapshot = string.Empty;
         private static int stopping;
         private static int shutdownStarted;
@@ -36,12 +37,21 @@ namespace LiveCaptionsTranscriber
         public static RecordingState CurrentRecordingState =>
             (RecordingState)Volatile.Read(ref recordingState);
         public static string? CurrentTranscriptFile => TranscriptFileWriter.FilePath;
+        public static bool MicrophoneAudioRequested
+        {
+            get
+            {
+                lock (recordingStateLock)
+                    return microphoneAudioRequested;
+            }
+        }
 
         public static bool TranscriptionOnlyMode { get; set; } = true;
         public static bool FirstUseFlag { get; set; } = false;
 
         public static event Action? TranscriptionLogged;
         public static event Action? RecordingStateChanged;
+        public static event Action? LiveCaptionsOptionsChanged;
 
         static Transcriber()
         {
@@ -442,7 +452,39 @@ namespace LiveCaptionsTranscriber
             if (currentWindow != null)
                 TryKillLiveCaptions(currentWindow);
             TranscriptFileWriter.EndSession();
+            lock (recordingStateLock)
+                microphoneAudioRequested = false;
             RecordingStateChanged?.Invoke();
+            LiveCaptionsOptionsChanged?.Invoke();
+        }
+
+        public static void ToggleMicrophoneAudio()
+        {
+            bool requested;
+            AutomationElement? currentWindow;
+
+            lock (recordingStateLock)
+            {
+                if ((RecordingState)recordingState == RecordingState.Starting)
+                    throw new InvalidOperationException(
+                        "Wait until Windows Live Captions finishes starting.");
+
+                requested = !microphoneAudioRequested;
+                currentWindow = Window;
+            }
+
+            // In Ready/Stopped this is an explicit one-session preselection.
+            // If Live Captions is already running, apply the user's command now.
+            if (currentWindow != null)
+            {
+                LiveCaptionsHandler.SetPreferences(
+                    currentWindow,
+                    includeMicrophoneAudio: requested);
+            }
+
+            lock (recordingStateLock)
+                microphoneAudioRequested = requested;
+            LiveCaptionsOptionsChanged?.Invoke();
         }
 
         public static void Shutdown()
@@ -512,6 +554,12 @@ namespace LiveCaptionsTranscriber
         {
             AutomationElement preparedWindow = LiveCaptionsHandler.LaunchLiveCaptions();
             LiveCaptionsHandler.FixLiveCaptions(preparedWindow);
+            if (MicrophoneAudioRequested)
+            {
+                LiveCaptionsHandler.SetPreferences(
+                    preparedWindow,
+                    includeMicrophoneAudio: true);
+            }
             LiveCaptionsHandler.HideLiveCaptions(preparedWindow);
             return preparedWindow;
         }
