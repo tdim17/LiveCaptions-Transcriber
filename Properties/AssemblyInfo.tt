@@ -11,7 +11,7 @@ using System.Reflection;
 
 <#
     int major = 1;
-    int minor = 3;
+    int minor = 4;
     int build = 0;
     int revision = 0;
 #>

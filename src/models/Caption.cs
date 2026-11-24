@@ -16,6 +16,7 @@ namespace LiveCaptionsTranscriber.models
         private string overlayOriginalCaption = "";
         private string overlayTranslatedCaption = "";
         private string fullTranscriptionText = "";
+        private string liveCaptionPreviewText = "";
 
         public string OriginalCaption { get; set; } = "";
         public string TranslatedCaption { get; set; } = "";
@@ -62,6 +63,18 @@ namespace LiveCaptionsTranscriber.models
             {
                 fullTranscriptionText = value;
                 OnPropertyChanged("FullTranscriptionText");
+            }
+        }
+        public string LiveCaptionPreviewText
+        {
+            get => liveCaptionPreviewText;
+            set
+            {
+                if (string.Equals(liveCaptionPreviewText, value, StringComparison.Ordinal))
+                    return;
+
+                liveCaptionPreviewText = value;
+                OnPropertyChanged(nameof(LiveCaptionPreviewText));
             }
         }
 

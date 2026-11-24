@@ -91,11 +91,14 @@ namespace LiveCaptionsTranscriber
                 }
                 catch (ElementNotAvailableException)
                 {
+                    Caption.LiveCaptionPreviewText = string.Empty;
                     FinalizeCurrentSegment();
                     Window = null;
                     continue;
                 }
                 currentState = CurrentRecordingState;
+                if (currentState is RecordingState.Recording or RecordingState.Paused)
+                    Caption.LiveCaptionPreviewText = fullText;
                 if (currentState == RecordingState.Paused)
                 {
                     lock (transcriptLock)
@@ -200,13 +203,13 @@ namespace LiveCaptionsTranscriber
             while (Volatile.Read(ref stopping) == 0)
             {
                 // Check LiveCaptions.exe still alive
-                if (CurrentRecordingState == RecordingState.Recording && Window == null)
+                if (CurrentRecordingState is (RecordingState.Recording or RecordingState.Paused) && Window == null)
                 {
                     Caption.DisplayTranslatedCaption = "[WARNING] LiveCaptions was unexpectedly closed, restarting...";
                     try
                     {
                         AutomationElement replacement = PrepareLiveCaptions();
-                        if (CurrentRecordingState == RecordingState.Recording)
+                        if (CurrentRecordingState is (RecordingState.Recording or RecordingState.Paused))
                             Window = replacement;
                         else
                             LiveCaptionsHandler.KillLiveCaptions(replacement);
@@ -341,6 +344,8 @@ namespace LiveCaptionsTranscriber
                     {
                     }
                     Caption?.ClearFullTranscription();
+                    if (Caption != null)
+                        Caption.LiveCaptionPreviewText = string.Empty;
                     TranscriptFileWriter.BeginSession();
                     Window = preparedWindow;
                 }
@@ -449,6 +454,8 @@ namespace LiveCaptionsTranscriber
 
             AutomationElement? currentWindow = Window;
             Window = null;
+            if (Caption != null)
+                Caption.LiveCaptionPreviewText = string.Empty;
             if (currentWindow != null)
                 TryKillLiveCaptions(currentWindow);
             TranscriptFileWriter.EndSession();

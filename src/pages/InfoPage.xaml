@@ -49,7 +49,7 @@
             </TextBlock>
             <TextBlock>
                 <Run FontWeight="SemiBold" Text="Version:" />
-                <Run x:Name="Version" Text="1.3.0" />
+                <Run x:Name="Version" Text="1.4.0" />
             </TextBlock>
         </StackPanel>
     </Grid>

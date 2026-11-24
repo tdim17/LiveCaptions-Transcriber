@@ -118,7 +118,7 @@
                             ToolTip="Click Through" />
                     </StackPanel>
                     
-                    <!-- Copy/Clear Buttons (Right Side) -->
+                    <!-- Live preview copy control (Right Side) -->
                     <StackPanel
                         Grid.Column="1"
                         HorizontalAlignment="Right"
@@ -135,18 +135,10 @@
                             Icon="{ui:SymbolIcon Copy16}"
                             Background="#FFAAAAAA"
                             FontSize="12" />
-                        <ui:Button
-                            x:Name="OverlayClearButton"
-                            Content="Clear"
-                            Padding="8,4"
-                            Click="OverlayClearButton_Click"
-                            Icon="{ui:SymbolIcon Delete16}"
-                            Background="#FFAAAAAA"
-                            FontSize="12" />
                     </StackPanel>
                 </Grid>
 
-                <!-- Full Transcription Display -->
+                <!-- Live Captions Preview -->
                 <ui:Card
                     x:Name="FullTranscriptionCard"
                     Grid.Row="1"
@@ -160,7 +152,7 @@
                         VerticalScrollBarVisibility="Auto"
                         HorizontalScrollBarVisibility="Disabled">
                         <TextBox
-                            x:Name="FullTranscriptionText"
+                            x:Name="LiveCaptionPreviewText"
                             FontSize="16"
                             Foreground="#FFFFFFFF"
                             Background="Transparent"
@@ -168,12 +160,12 @@
                             IsReadOnly="True"
                             TextWrapping="Wrap"
                             VerticalAlignment="Stretch"
-                            Text="{Binding FullTranscriptionText, UpdateSourceTrigger=PropertyChanged}"
+                            Text="{Binding LiveCaptionPreviewText, UpdateSourceTrigger=PropertyChanged}"
                             VerticalScrollBarVisibility="Disabled"
                             HorizontalScrollBarVisibility="Disabled"
                             Cursor="IBeam"
-                            ContextMenuOpening="FullTranscriptionText_ContextMenuOpening"
-                            KeyDown="FullTranscriptionText_KeyDown">
+                            ContextMenuOpening="LiveCaptionPreviewText_ContextMenuOpening"
+                            KeyDown="LiveCaptionPreviewText_KeyDown">
                             
                             <TextBox.ContextMenu>
                                 <ContextMenu x:Name="TextContextMenu">

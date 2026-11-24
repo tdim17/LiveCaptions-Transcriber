@@ -45,7 +45,7 @@ namespace LiveCaptionsTranscriber
             Loaded += (s, e) => Transcriber.Caption.PropertyChanged += TranslatedChanged;
             Unloaded += (s, e) => Transcriber.Caption.PropertyChanged -= TranslatedChanged;
 
-            this.FullTranscriptionText.Foreground = ColorList[Transcriber.Setting.OverlayWindow.FontColor];
+            this.LiveCaptionPreviewText.Foreground = ColorList[Transcriber.Setting.OverlayWindow.FontColor];
             this.BorderBackground.Background = ColorList[Transcriber.Setting.OverlayWindow.BackgroundColor];
             this.BorderBackground.Opacity = Transcriber.Setting.OverlayWindow.Opacity;
 
@@ -131,8 +131,8 @@ namespace LiveCaptionsTranscriber
         {
             ApplyFontSize();
             
-            // Auto-scroll to bottom when new transcription is added
-            if (e.PropertyName == nameof(Transcriber.Caption.FullTranscriptionText))
+            // Keep the newest live caption visible.
+            if (e.PropertyName == nameof(Transcriber.Caption.LiveCaptionPreviewText))
             {
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -157,9 +157,9 @@ namespace LiveCaptionsTranscriber
         {
             try
             {
-                if (!string.IsNullOrEmpty(Transcriber.Caption.FullTranscriptionText))
+                if (!string.IsNullOrEmpty(Transcriber.Caption.LiveCaptionPreviewText))
                 {
-                    Clipboard.SetText(Transcriber.Caption.FullTranscriptionText);
+                    Clipboard.SetText(Transcriber.Caption.LiveCaptionPreviewText);
                     ShowOverlayMessage("Copied!");
                 }
                 else
@@ -173,19 +173,6 @@ namespace LiveCaptionsTranscriber
             }
         }
 
-        private void OverlayClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Transcriber.ClearTranscription();
-                ShowOverlayMessage("Cleared");
-            }
-            catch
-            {
-                ShowOverlayMessage("Clear failed");
-            }
-        }
-
         private async void ShowOverlayMessage(string message)
         {
             var originalText = OverlayCopyButton.Content;
@@ -195,7 +182,7 @@ namespace LiveCaptionsTranscriber
         }
 
         // Context menu event handlers
-        private void FullTranscriptionText_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
+        private void LiveCaptionPreviewText_ContextMenuOpening(object sender, System.Windows.Controls.ContextMenuEventArgs e)
         {
             var textBox = sender as System.Windows.Controls.TextBox;
             var contextMenu = textBox?.ContextMenu;
@@ -215,9 +202,9 @@ namespace LiveCaptionsTranscriber
         {
             try
             {
-                if (!string.IsNullOrEmpty(FullTranscriptionText.SelectedText))
+                if (!string.IsNullOrEmpty(LiveCaptionPreviewText.SelectedText))
                 {
-                    Clipboard.SetText(FullTranscriptionText.SelectedText);
+                    Clipboard.SetText(LiveCaptionPreviewText.SelectedText);
                     ShowOverlayMessage("Selected text copied!");
                 }
                 else
@@ -240,7 +227,7 @@ namespace LiveCaptionsTranscriber
         {
             try
             {
-                FullTranscriptionText.SelectAll();
+                LiveCaptionPreviewText.SelectAll();
                 ShowOverlayMessage("All text selected");
             }
             catch
@@ -249,13 +236,13 @@ namespace LiveCaptionsTranscriber
             }
         }
 
-        private void FullTranscriptionText_KeyDown(object sender, KeyEventArgs e)
+        private void LiveCaptionPreviewText_KeyDown(object sender, KeyEventArgs e)
         {
             // Handle keyboard shortcuts
             if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 // Ctrl+C - Copy selected text (or all if nothing selected)
-                if (!string.IsNullOrEmpty(FullTranscriptionText.SelectedText))
+                if (!string.IsNullOrEmpty(LiveCaptionPreviewText.SelectedText))
                 {
                     CopySelected_Click(sender, e);
                 }
@@ -302,7 +289,7 @@ namespace LiveCaptionsTranscriber
             Transcriber.Setting.OverlayWindow.FontColor++;
             if (Transcriber.Setting.OverlayWindow.FontColor > ColorList.Count)
                 Transcriber.Setting.OverlayWindow.FontColor = 1;
-            FullTranscriptionText.Foreground = ColorList[Transcriber.Setting.OverlayWindow.FontColor];
+            LiveCaptionPreviewText.Foreground = ColorList[Transcriber.Setting.OverlayWindow.FontColor];
         }
 
         private void OpacityIncrease_Click(object sender, RoutedEventArgs e)
@@ -348,7 +335,7 @@ namespace LiveCaptionsTranscriber
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                this.FullTranscriptionText.FontSize = Transcriber.Setting.OverlayWindow.FontSize;
+                this.LiveCaptionPreviewText.FontSize = Transcriber.Setting.OverlayWindow.FontSize;
             }), DispatcherPriority.Background);
         }
 
