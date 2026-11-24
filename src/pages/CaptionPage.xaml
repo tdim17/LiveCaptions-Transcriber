@@ -225,11 +225,11 @@
                     TextBlock.LineHeight="22"
                     Padding="0,0,15,0"
                     IsReadOnly="True"
-                    IsUndoEnabled="True"
-                    UndoLimit="100"
+                    IsUndoEnabled="False"
                     TextWrapping="Wrap"
                     Text="{Binding FullTranscriptionText, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
                     TextChanged="FullTranscription_TextChanged"
+                    PreviewKeyDown="FullTranscription_PreviewKeyDown"
                     VerticalScrollBarVisibility="Disabled"
                     HorizontalScrollBarVisibility="Disabled"
                     MinHeight="100" />

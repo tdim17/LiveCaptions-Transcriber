@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media;
+using System.Windows.Input;
 using Microsoft.Win32;
 
 using LiveCaptionsTranscriber.utils;
@@ -20,6 +21,9 @@ namespace LiveCaptionsTranscriber
         private MainWindow? ownerWindow;
         private bool isEditing;
         private string editOriginalText = string.Empty;
+        private string lastEditText = string.Empty;
+        private bool suppressEditHistory;
+        private readonly Stack<string> editUndoHistory = new();
         public static CaptionPage Instance => instance;
 
         public CaptionPage()
@@ -104,9 +108,12 @@ namespace LiveCaptionsTranscriber
                 return;
 
             editOriginalText = Transcriber.Caption?.FullTranscriptionText ?? string.Empty;
+            suppressEditHistory = true;
             FullTranscription.SetCurrentValue(TextBox.TextProperty, editOriginalText);
+            suppressEditHistory = false;
             FullTranscription.IsReadOnly = false;
-            FullTranscription.ClearUndo();
+            editUndoHistory.Clear();
+            lastEditText = editOriginalText;
             isEditing = true;
             FullTranscription.Focus();
             FullTranscription.CaretIndex = FullTranscription.Text.Length;
@@ -115,18 +122,39 @@ namespace LiveCaptionsTranscriber
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!isEditing || !FullTranscription.CanUndo)
+            if (!isEditing || editUndoHistory.Count == 0)
                 return;
 
-            FullTranscription.Undo();
+            string previousText = editUndoHistory.Pop();
+            suppressEditHistory = true;
+            FullTranscription.SetCurrentValue(TextBox.TextProperty, previousText);
+            suppressEditHistory = false;
+            lastEditText = previousText;
             FullTranscription.Focus();
             RefreshRecordingControls();
         }
 
         private void FullTranscription_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (isEditing && !suppressEditHistory &&
+                !string.Equals(FullTranscription.Text, lastEditText, StringComparison.Ordinal))
+            {
+                editUndoHistory.Push(lastEditText);
+                lastEditText = FullTranscription.Text;
+            }
+
             if (UndoButton != null)
-                UndoButton.IsEnabled = isEditing && FullTranscription.CanUndo;
+                UndoButton.IsEnabled = isEditing && editUndoHistory.Count > 0;
+        }
+
+        private void FullTranscription_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (isEditing && e.Key == Key.Z &&
+                Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                UndoButton_Click(sender, e);
+                e.Handled = true;
+            }
         }
 
         private async void ApplyEditButton_Click(object sender, RoutedEventArgs e)
@@ -205,13 +233,16 @@ namespace LiveCaptionsTranscriber
         {
             isEditing = false;
             FullTranscription.IsReadOnly = true;
+            suppressEditHistory = true;
             FullTranscription.SetCurrentValue(
                 TextBox.TextProperty,
                 restoreOriginal
                     ? editOriginalText
                     : Transcriber.Caption?.FullTranscriptionText ?? string.Empty);
-            FullTranscription.ClearUndo();
+            suppressEditHistory = false;
+            editUndoHistory.Clear();
             editOriginalText = string.Empty;
+            lastEditText = string.Empty;
             RefreshRecordingControls();
         }
 
@@ -280,7 +311,7 @@ namespace LiveCaptionsTranscriber
             CopyButton.IsEnabled = !isStarting;
             ClearButton.IsEnabled = isEditing;
             EditButton.IsEnabled = !isEditing && state == RecordingState.Paused;
-            UndoButton.IsEnabled = isEditing && FullTranscription.CanUndo;
+            UndoButton.IsEnabled = isEditing && editUndoHistory.Count > 0;
             SaveAsButton.IsEnabled = !isEditing &&
                 state is (RecordingState.Recording or RecordingState.Paused);
             ApplyEditButton.Visibility = isEditing
