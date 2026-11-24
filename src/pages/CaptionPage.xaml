@@ -222,7 +222,7 @@
                     Background="Transparent"
                     BorderThickness="0"
                     FontSize="14"
-                    LineHeight="22"
+                    TextBlock.LineHeight="22"
                     Padding="0,0,15,0"
                     IsReadOnly="True"
                     IsUndoEnabled="True"
