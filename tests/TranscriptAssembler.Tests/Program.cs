@@ -14,6 +14,57 @@ static void AssertTrue(bool value, string name)
         throw new InvalidOperationException($"{name} failed.");
 }
 
+static void EditedFrozenTextSurvivesResume()
+{
+    var document = new TranscriptSessionDocument();
+    document.ApplySnapshot("Original first block.");
+    document.FreezeActiveSegment();
+    document.ReplaceFrozenDocument("Manually corrected first block.");
+    document.ResumeWithBoundary(
+        "========== CONTINUE 2026-11-24 09:30:28 ==========",
+        "Ignored pause material.");
+    document.ApplySnapshot("Ignored pause material. New second block.");
+
+    AssertTrue(
+        document.FullDocument.Contains("Manually corrected first block.", StringComparison.Ordinal),
+        nameof(EditedFrozenTextSurvivesResume) + " corrected");
+    AssertTrue(
+        !document.FullDocument.Contains("Original first block.", StringComparison.Ordinal),
+        nameof(EditedFrozenTextSurvivesResume) + " original removed");
+    AssertTrue(
+        document.FullDocument.Contains("New second block.", StringComparison.Ordinal),
+        nameof(EditedFrozenTextSurvivesResume) + " appended");
+}
+
+static void EarlierBlocksRemainEditableAfterSeveralResumes()
+{
+    var document = new TranscriptSessionDocument();
+    document.ApplySnapshot("First block.");
+    document.FreezeActiveSegment();
+    document.ResumeWithBoundary("========== CONTINUE ONE ==========", string.Empty);
+    document.ApplySnapshot("Second block.");
+    document.FreezeActiveSegment();
+    document.ResumeWithBoundary("========== CONTINUE TWO ==========", string.Empty);
+    document.ApplySnapshot("Third block.");
+    document.FreezeActiveSegment();
+
+    document.ReplaceFrozenDocument(
+        document.FrozenDocument.Replace(
+            "First block.",
+            "Corrected first block.",
+            StringComparison.Ordinal));
+
+    AssertTrue(
+        document.FullDocument.Contains("Corrected first block.", StringComparison.Ordinal),
+        nameof(EarlierBlocksRemainEditableAfterSeveralResumes));
+    AssertTrue(
+        document.FullDocument.Contains("Second block.", StringComparison.Ordinal),
+        nameof(EarlierBlocksRemainEditableAfterSeveralResumes) + " second");
+    AssertTrue(
+        document.FullDocument.Contains("Third block.", StringComparison.Ordinal),
+        nameof(EarlierBlocksRemainEditableAfterSeveralResumes) + " third");
+}
+
 static void TemporaryPeriodsAreReplaced()
 {
     var assembler = new TranscriptAssembler();
@@ -279,5 +330,7 @@ ResumeMarkerIsAnIndependentFormattingBoundary();
 ResumeDiscardsExcludedIntervalAndCapturesOnlyNewText();
 ResumeWorksWithShortExcludedBaseline();
 ResumePreservesVeryShortWantedPhrases();
+EditedFrozenTextSurvivesResume();
+EarlierBlocksRemainEditableAfterSeveralResumes();
 
 Console.WriteLine("All TranscriptAssembler tests passed.");

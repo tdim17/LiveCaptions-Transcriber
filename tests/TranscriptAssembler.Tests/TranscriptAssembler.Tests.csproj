@@ -9,5 +9,6 @@
     <Compile Include="..\..\src\utils\TranscriptAssembler.cs" Link="TranscriptAssembler.cs" />
     <Compile Include="..\..\src\utils\TranscriptParagraphFormatter.cs" Link="TranscriptParagraphFormatter.cs" />
     <Compile Include="..\..\src\utils\TranscriptDocumentFormatter.cs" Link="TranscriptDocumentFormatter.cs" />
+    <Compile Include="..\..\src\utils\TranscriptSessionDocument.cs" Link="TranscriptSessionDocument.cs" />
   </ItemGroup>
 </Project>

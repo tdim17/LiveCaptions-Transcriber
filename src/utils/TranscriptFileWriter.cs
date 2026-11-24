@@ -83,5 +83,45 @@ namespace LiveCaptionsTranscriber.utils
                 lastWrittenText = string.Empty;
             }
         }
+
+        public static string MoveCompletedFile(string destinationPath)
+        {
+            lock (SyncRoot)
+            {
+                if (sessionActive)
+                    throw new InvalidOperationException(
+                        "The transcript must be stopped before it can be moved.");
+                if (filePath == null || !File.Exists(filePath))
+                    throw new InvalidOperationException("No completed transcript file exists.");
+                if (string.IsNullOrWhiteSpace(destinationPath))
+                    throw new ArgumentException(
+                        "A destination path is required.",
+                        nameof(destinationPath));
+
+                string source = Path.GetFullPath(filePath);
+                string destination = Path.GetFullPath(destinationPath);
+                if (!string.Equals(source, destination, StringComparison.OrdinalIgnoreCase))
+                {
+                    string? destinationDirectory = Path.GetDirectoryName(destination);
+                    if (string.IsNullOrEmpty(destinationDirectory))
+                        throw new InvalidOperationException(
+                            "The destination directory is invalid.");
+                    Directory.CreateDirectory(destinationDirectory);
+
+                    try
+                    {
+                        File.Move(source, destination, true);
+                    }
+                    catch (IOException)
+                    {
+                        File.Copy(source, destination, true);
+                        File.Delete(source);
+                    }
+                }
+
+                filePath = destination;
+                return destination;
+            }
+        }
     }
 }

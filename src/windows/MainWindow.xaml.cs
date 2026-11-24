@@ -142,7 +142,7 @@ namespace LiveCaptionsTranscriber
             MicrophoneAudioMenuItem.IsEnabled = !isStarting;
             MicrophoneAudioMenuItem.IsChecked = microphoneRequested;
             MicrophoneButton.ToolTip = microphoneRequested
-                ? "Microphone audio: On for this session"
+                ? "Microphone audio: On"
                 : "Microphone audio: Off";
 
             if (MicrophoneButton.Icon is SymbolIcon symbolIcon)

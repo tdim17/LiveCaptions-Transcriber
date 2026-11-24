@@ -1,9 +1,11 @@
 using System.ComponentModel;
-using System.Text;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media;
+using Microsoft.Win32;
 
 using LiveCaptionsTranscriber.utils;
 using LiveCaptionsTranscriber.models;
@@ -16,6 +18,8 @@ namespace LiveCaptionsTranscriber
 
         private static CaptionPage instance;
         private MainWindow? ownerWindow;
+        private bool isEditing;
+        private string editOriginalText = string.Empty;
         public static CaptionPage Instance => instance;
 
         public CaptionPage()
@@ -49,28 +53,11 @@ namespace LiveCaptionsTranscriber
             };
         }
 
-        private async void TextBlock_MouseLeftButtonDown(object sender, RoutedEventArgs e)
-        {
-            if (sender is TextBlock textBlock)
-            {
-                try
-                {
-                    Clipboard.SetText(textBlock.Text);
-                    textBlock.ToolTip = "Copied!";
-                }
-                catch
-                {
-                    textBlock.ToolTip = "Error to Copy";
-                }
-                await Task.Delay(500);
-                textBlock.ToolTip = "Click to Copy";
-            }
-        }
-
         private void TranslatedChanged(object sender, PropertyChangedEventArgs e)
         {
             // Auto-scroll to bottom when new transcription is added
-            if (e.PropertyName == nameof(Transcriber.Caption.FullTranscriptionText))
+            if (!isEditing &&
+                e.PropertyName == nameof(Transcriber.Caption.FullTranscriptionText))
             {
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -101,15 +88,131 @@ namespace LiveCaptionsTranscriber
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!isEditing)
+                return;
+
+            FullTranscription.Focus();
+            FullTranscription.SelectAll();
+            FullTranscription.SelectedText = string.Empty;
+            FullTranscription.CaretIndex = 0;
+            RefreshRecordingControls();
+        }
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (isEditing || Transcriber.CurrentRecordingState != RecordingState.Paused)
+                return;
+
+            editOriginalText = Transcriber.Caption?.FullTranscriptionText ?? string.Empty;
+            FullTranscription.SetCurrentValue(TextBox.TextProperty, editOriginalText);
+            FullTranscription.IsReadOnly = false;
+            FullTranscription.ClearUndo();
+            isEditing = true;
+            FullTranscription.Focus();
+            FullTranscription.CaretIndex = FullTranscription.Text.Length;
+            RefreshRecordingControls();
+        }
+
+        private void UndoButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isEditing || !FullTranscription.CanUndo)
+                return;
+
+            FullTranscription.Undo();
+            FullTranscription.Focus();
+            RefreshRecordingControls();
+        }
+
+        private void FullTranscription_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (UndoButton != null)
+                UndoButton.IsEnabled = isEditing && FullTranscription.CanUndo;
+        }
+
+        private async void ApplyEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isEditing)
+                return;
+
+            string editedText = FullTranscription.Text;
             try
             {
-                Transcriber.ClearTranscription();
-                ShowTemporaryMessage("Transcription cleared");
+                await Task.Run(() => Transcriber.ApplyEditedTranscript(editedText));
+                ExitEditMode(restoreOriginal: false);
+                ShowTemporaryMessage("Edits saved");
             }
-            catch
+            catch (Exception exception)
             {
-                ShowTemporaryMessage("Failed to clear");
+                RecordingStatusText.Text = $"Unable to apply edits: {exception.Message}";
             }
+        }
+
+        private void CancelEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (isEditing)
+                ExitEditMode(restoreOriginal: true);
+        }
+
+        private async void SaveAsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (isEditing ||
+                Transcriber.CurrentRecordingState is not
+                    (RecordingState.Recording or RecordingState.Paused))
+                return;
+
+            string? currentPath = Transcriber.CurrentTranscriptFile;
+            var dialog = new SaveFileDialog
+            {
+                AddExtension = true,
+                CheckPathExists = true,
+                DefaultExt = ".txt",
+                Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                InitialDirectory = AppPaths.TranscriptsDirectory,
+                FileName = string.IsNullOrEmpty(currentPath)
+                    ? $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_transcript.txt"
+                    : Path.GetFileName(currentPath),
+                OverwritePrompt = true,
+                Title = "Save transcript as"
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            await RunRecordingCommand(
+                () => Transcriber.StopRecordingAs(dialog.FileName),
+                "Unable to save transcript");
+        }
+
+        private void OpenResultsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Directory.CreateDirectory(AppPaths.TranscriptsDirectory);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = AppPaths.TranscriptsDirectory,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception exception)
+            {
+                RecordingStatusText.Text =
+                    $"Unable to open Results_txt: {exception.Message}";
+            }
+        }
+
+        private void ExitEditMode(bool restoreOriginal)
+        {
+            isEditing = false;
+            FullTranscription.IsReadOnly = true;
+            FullTranscription.SetCurrentValue(
+                TextBox.TextProperty,
+                restoreOriginal
+                    ? editOriginalText
+                    : Transcriber.Caption?.FullTranscriptionText ?? string.Empty);
+            FullTranscription.ClearUndo();
+            editOriginalText = string.Empty;
+            RefreshRecordingControls();
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)
@@ -168,21 +271,38 @@ namespace LiveCaptionsTranscriber
             RecordingState state = Transcriber.CurrentRecordingState;
             bool isStarting = state == RecordingState.Starting;
 
-            StartButton.IsEnabled = state is RecordingState.Ready or RecordingState.Stopped;
-            PauseButton.IsEnabled = state == RecordingState.Recording;
-            ResumeButton.IsEnabled = state == RecordingState.Paused;
-            StopButton.IsEnabled = state is RecordingState.Recording or RecordingState.Paused;
-            ClearButton.IsEnabled = !isStarting;
+            StartButton.IsEnabled = !isEditing &&
+                state is (RecordingState.Ready or RecordingState.Stopped);
+            PauseButton.IsEnabled = !isEditing && state == RecordingState.Recording;
+            ResumeButton.IsEnabled = !isEditing && state == RecordingState.Paused;
+            StopButton.IsEnabled = !isEditing &&
+                state is (RecordingState.Recording or RecordingState.Paused);
+            CopyButton.IsEnabled = !isStarting;
+            ClearButton.IsEnabled = isEditing;
+            EditButton.IsEnabled = !isEditing && state == RecordingState.Paused;
+            UndoButton.IsEnabled = isEditing && FullTranscription.CanUndo;
+            SaveAsButton.IsEnabled = !isEditing &&
+                state is (RecordingState.Recording or RecordingState.Paused);
+            ApplyEditButton.Visibility = isEditing
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            CancelEditButton.Visibility = isEditing
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            FullTranscription.IsReadOnly = !isEditing;
 
             RecordingStatusText.Text = state switch
             {
-                RecordingState.Ready => "Ready — press Start Recording",
-                RecordingState.Starting => "Starting Live Captions...",
+                RecordingState.Ready => "READY — press Start Recording",
+                RecordingState.Starting => "STARTING",
                 RecordingState.Recording => "●  RECORDING",
-                RecordingState.Paused => "Paused — Live Captions active; text is excluded",
-                RecordingState.Stopped => "Stopped — file saved",
+                RecordingState.Paused => "PAUSED",
+                RecordingState.Stopped => "RECORDED",
                 _ => state.ToString()
             };
+            RecordingStatusBanner.ToolTip = state == RecordingState.Paused
+                ? "Live Captions remain active; text is not recorded"
+                : null;
 
             if (state == RecordingState.Recording)
             {
@@ -205,15 +325,19 @@ namespace LiveCaptionsTranscriber
             string? filePath = Transcriber.CurrentTranscriptFile;
             TranscriptFileText.Text = string.IsNullOrEmpty(filePath)
                 ? "No transcript file yet"
+                : Path.GetFileName(filePath);
+            TranscriptFileText.ToolTip = filePath;
+            OpenResultsButton.ToolTip = string.IsNullOrEmpty(filePath)
+                ? AppPaths.TranscriptsDirectory
                 : filePath;
         }
 
         private async void ShowTemporaryMessage(string message)
         {
-            var originalText = CopyButton.Content;
-            CopyButton.Content = message;
+            object? originalToolTip = CopyButton.ToolTip;
+            CopyButton.ToolTip = message;
             await Task.Delay(1500);
-            CopyButton.Content = originalText;
+            CopyButton.ToolTip = originalToolTip;
         }
 
         public void CollapseTranslatedCaption(bool isCollapsed)

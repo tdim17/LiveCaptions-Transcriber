@@ -79,7 +79,9 @@
                         Margin="0,0,8,0"
                         Padding="15,8"
                         Click="PauseButton_Click"
-                        Appearance="Secondary" />
+                        Appearance="Secondary"
+                        Background="#F0F0F0"
+                        BorderBrush="#B8B8B8" />
                     <ui:Button
                         x:Name="ResumeButton"
                         Content="Resume"
@@ -95,7 +97,9 @@
                         Content="Stop"
                         Padding="15,8"
                         Click="StopButton_Click"
-                        Appearance="Secondary" />
+                        Appearance="Secondary"
+                        Background="#F0F0F0"
+                        BorderBrush="#B8B8B8" />
                 </StackPanel>
                 <Border
                     x:Name="RecordingStatusBanner"
@@ -110,31 +114,89 @@
                         FontWeight="Bold"
                         Text="Ready — press Start Recording" />
                 </Border>
-                <TextBlock
-                    x:Name="TranscriptFileText"
+                <StackPanel
                     Margin="0,3,0,0"
                     HorizontalAlignment="Center"
-                    Foreground="Gray"
-                    TextTrimming="CharacterEllipsis"
-                    ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    Orientation="Horizontal">
+                    <TextBlock
+                        x:Name="TranscriptFileText"
+                        VerticalAlignment="Center"
+                        FontSize="13"
+                        Foreground="Gray"
+                        TextTrimming="CharacterEllipsis"
+                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                    <ui:Button
+                        x:Name="OpenResultsButton"
+                        Width="30"
+                        Height="26"
+                        Margin="5,0,0,0"
+                        Appearance="Transparent"
+                        Click="OpenResultsButton_Click"
+                        Icon="{ui:SymbolIcon FolderOpen20}"
+                        ToolTip="Open Results_txt folder" />
+                </StackPanel>
                 <StackPanel
                     Margin="0,8,0,0"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center">
                     <ui:Button
                         x:Name="CopyButton"
-                        Content="Copy All"
-                        Margin="0,0,10,0"
-                        Padding="15,8"
+                        Width="42"
+                        Height="36"
+                        Margin="0,0,6,0"
                         Click="CopyButton_Click"
-                        Icon="{ui:SymbolIcon Copy16}" />
+                        Icon="{ui:SymbolIcon Copy20}"
+                        ToolTip="Copy all" />
                     <ui:Button
                         x:Name="ClearButton"
-                        Content="Clear"
-                        Padding="15,8"
+                        Width="42"
+                        Height="36"
+                        Margin="0,0,6,0"
                         Click="ClearButton_Click"
-                        Icon="{ui:SymbolIcon Delete16}"
-                        Appearance="Secondary" />
+                        Icon="{ui:SymbolIcon Delete20}"
+                        Appearance="Secondary"
+                        ToolTip="Clear editable text" />
+                    <ui:Button
+                        x:Name="EditButton"
+                        Width="42"
+                        Height="36"
+                        Margin="0,0,6,0"
+                        Click="EditButton_Click"
+                        Icon="{ui:SymbolIcon Edit20}"
+                        ToolTip="Edit transcript while paused" />
+                    <ui:Button
+                        x:Name="UndoButton"
+                        Width="42"
+                        Height="36"
+                        Margin="0,0,6,0"
+                        Click="UndoButton_Click"
+                        Icon="{ui:SymbolIcon ArrowUndo20}"
+                        ToolTip="Undo last edit" />
+                    <ui:Button
+                        x:Name="SaveAsButton"
+                        Width="42"
+                        Height="36"
+                        Margin="0,0,6,0"
+                        Click="SaveAsButton_Click"
+                        Icon="{ui:SymbolIcon Save20}"
+                        ToolTip="Save As and stop" />
+                    <ui:Button
+                        x:Name="ApplyEditButton"
+                        Width="42"
+                        Height="36"
+                        Margin="0,0,6,0"
+                        Click="ApplyEditButton_Click"
+                        Icon="{ui:SymbolIcon Checkmark20}"
+                        ToolTip="Apply transcript edits"
+                        Visibility="Collapsed" />
+                    <ui:Button
+                        x:Name="CancelEditButton"
+                        Width="42"
+                        Height="36"
+                        Click="CancelEditButton_Click"
+                        Icon="{ui:SymbolIcon Dismiss20}"
+                        ToolTip="Cancel transcript edits"
+                        Visibility="Collapsed" />
                 </StackPanel>
             </StackPanel>
         </ui:Card>
@@ -154,17 +216,22 @@
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled"
                 VerticalAlignment="Stretch">
-                <TextBlock
+                <TextBox
                     x:Name="FullTranscription"
+                    AcceptsReturn="True"
                     Background="Transparent"
+                    BorderThickness="0"
                     FontSize="14"
                     LineHeight="22"
-                    Padding="0,0,10,0"
-                    Style="{StaticResource CaptionBlockStyle}"
-                    Text="{Binding FullTranscriptionText, UpdateSourceTrigger=PropertyChanged}"
-                    Cursor="Hand"
-                    MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"
-                    ToolTip="Click to Copy"
+                    Padding="0,0,15,0"
+                    IsReadOnly="True"
+                    IsUndoEnabled="True"
+                    UndoLimit="100"
+                    TextWrapping="Wrap"
+                    Text="{Binding FullTranscriptionText, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                    TextChanged="FullTranscription_TextChanged"
+                    VerticalScrollBarVisibility="Disabled"
+                    HorizontalScrollBarVisibility="Disabled"
                     MinHeight="100" />
             </ScrollViewer>
         </ui:Card>
